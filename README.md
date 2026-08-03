@@ -114,13 +114,19 @@ Tasks are never public.
 2. **SQL Editor → New query**, paste all of [`supabase/schema.sql`](supabase/schema.sql), run it.
    It creates the tables, the row level security policies and the realtime publication. Re-running
    it is safe.
-3. **Project Settings → API**: copy the Project URL and the `anon` public key.
+3. **Project Settings → API**: copy the Project URL and the publishable (`anon`) key.
 4. Copy `.env.example` to `.env` and fill it in:
 
    ```env
    VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGci...
+   VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxx
    ```
+
+   New Supabase projects issue a key that starts with `sb_publishable_`. Older ones issue a
+   JWT starting with `eyJhbGci...`. Either works — `@supabase/supabase-js` has supported the
+   newer format for a long time, and the version pinned in `package-lock.json` handles it.
+   Whichever your project shows is the right one. Do **not** use the `service_role` key: it
+   bypasses row level security entirely and would be shipped in the browser bundle.
 
 5. Add yourself as a committee member (see below), then `npm run dev`.
 
