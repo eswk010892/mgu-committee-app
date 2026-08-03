@@ -137,26 +137,26 @@ protects your data is the row level security policy, which is why step 2 is not 
 
 ## Deploying
 
-### GitHub Pages (included, free)
+### Vercel (how the Montreal deployment runs)
 
-`.github/workflows/deploy.yml` is already set up. Once:
+Import the repo at vercel.com. Vite is auto-detected — build command `npm run build`, output
+directory `dist`. Add two environment variables to Production, Preview and Development:
 
-1. Push to `main`.
-2. **Settings → Pages → Source: GitHub Actions.**
-3. Go to **Settings → Secrets and variables → Actions** and add:
-   - *Variable*: `VITE_SUPABASE_URL` = your project URL
-   - *Secret*: `VITE_SUPABASE_ANON_KEY` = your anon key
+- `VITE_SUPABASE_URL` = your project URL
+- `VITE_SUPABASE_ANON_KEY` = your anon key
 
-Every push to `main` redeploys. The workflow sets `BASE_PATH` from the repo name automatically, so
-sub-path hosting works without editing anything.
+Leave `BASE_PATH` unset; Vercel serves from the domain root and `vite.config.js` already falls
+back to `base: '/'`. Every push to `main` redeploys.
 
-> The anon key is a public, browser-visible key — it is not a password. It is kept as a secret here
-> only to keep it out of the repo. Your actual protection is the RLS policy in `schema.sql`.
+> The anon key is a public, browser-visible key — it is not a password. It is kept out of the repo
+> as a convenience, not as protection. Your actual protection is the RLS policy in `schema.sql`.
 
-### Netlify or Vercel
+### GitHub Pages
 
-Build command `npm run build`, publish directory `dist`, and add the same three environment
-variables. Leave `BASE_PATH` unset — these hosts serve from the domain root.
+Previously supported via `.github/workflows/deploy.yml`, now removed — running both meant two live
+copies of the same commit on two public URLs. To bring it back, restore that workflow and set
+**Settings → Pages → Source: GitHub Actions**. It needs `BASE_PATH=/<repo-name>/` because Pages
+serves from a sub-path rather than the domain root.
 
 ### Add it to a phone home screen
 
