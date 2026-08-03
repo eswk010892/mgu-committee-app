@@ -18,6 +18,7 @@ export function useAuth() {
   const [status, setStatus] = useState(isConfigured ? 'loading' : 'committee')
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (!isConfigured) return
@@ -37,16 +38,23 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data }) => resolve(data.session))
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => resolve(session))
     return () => { alive = false; sub.subscription.unsubscribe() }
-  }, [])
+  }, [tick])
 
   return {
     status, user, profile,
     demo: !isConfigured,
     isCommittee: status === 'committee',
+    recheck: () => setTick(t => t + 1),
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    signUp: (email, password) => supabase.auth.signUp({ email, password }),
     signOut: () => supabase.auth.signOut(),
     resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname,
     }),
+    joinCommittee: async (invite, name, phone) => {
+      const { data, error } = await supabase.rpc('join_committee',
+        { invite, member_name: name, member_phone: phone || null })
+      return { result: data, error }
+    },
   }
 }

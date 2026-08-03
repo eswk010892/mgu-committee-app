@@ -173,7 +173,68 @@ begin
 end $$;
 
 -- ============================================================================
---  ADDING A COMMITTEE MEMBER
+--  SELF-SERVE JOIN — invite codes
+--  Members join from the app with a shared code (sent in the committee
+--  WhatsApp group) instead of an admin creating each account by hand.
+--  The code is the gate; RLS stays exactly as above. Seed a code with:
+--
+--     insert into invite_codes (code, expires_on, max_uses)
+--     values ('YOUR-CODE-HERE', '2026-09-30', 15);
+--
+--  Rotate by deleting/inserting rows. Do NOT commit real code values.
+-- ---------------------------------------------------------------------------
+create table if not exists invite_codes (
+  code        text primary key,
+  expires_on  date not null,
+  max_uses    int  not null default 15,
+  uses        int  not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table invite_codes enable row level security;
+drop policy if exists "invite_codes committee read" on invite_codes;
+create policy "invite_codes committee read" on invite_codes
+  for select to authenticated using (is_committee());
+drop policy if exists "invite_codes committee write" on invite_codes;
+create policy "invite_codes committee write" on invite_codes
+  for all to authenticated using (is_committee()) with check (is_committee());
+-- No anon policy at all: the public API cannot even see that codes exist.
+
+-- Called by the app after sign-up/sign-in. security definer so a not-yet-member
+-- can be inserted into committee_members — but only through this gate.
+create or replace function public.join_committee(invite text, member_name text, member_phone text default null)
+returns text
+language plpgsql security definer set search_path = public
+as $$
+declare hit int;
+begin
+  if auth.uid() is null then return 'not-signed-in'; end if;
+  if exists (select 1 from committee_members where user_id = auth.uid()) then
+    return 'already-member';
+  end if;
+  if member_name is null or length(trim(member_name)) = 0 then
+    return 'name-required';
+  end if;
+  -- Case-insensitive; the atomic update is also the use-counter.
+  update invite_codes
+     set uses = uses + 1
+   where upper(code) = upper(trim(invite))
+     and expires_on >= current_date
+     and uses < max_uses;
+  get diagnostics hit = row_count;
+  if hit = 0 then return 'bad-code'; end if;
+  insert into committee_members (user_id, name, role, phone)
+  values (auth.uid(), trim(member_name), 'Member', nullif(trim(member_phone), ''));
+  return 'ok';
+end $$;
+
+revoke all on function public.join_committee(text, text, text) from public;
+grant execute on function public.join_committee(text, text, text) to authenticated;
+
+-- ============================================================================
+--  ADDING A COMMITTEE MEMBER (manual fallback)
+--  Normal path: share the invite code + app link; members join themselves.
+--  By hand instead:
 --  1. Authentication -> Users -> Add user (email + password), or invite them.
 --  2. Copy their User UID and run:
 --

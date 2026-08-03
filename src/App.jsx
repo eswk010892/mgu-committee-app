@@ -17,6 +17,8 @@ import PublicDashboard from './components/PublicDashboard.jsx'
 import Login from './components/Login.jsx'
 import GaneshMark from './components/GaneshMark.jsx'
 
+const JOIN_LINK = window.location.hash === '#join'
+
 const TABS = [
   ['overview', 'Overview', Flame],
   ['schedule', 'Schedule', Calendar],
@@ -30,7 +32,8 @@ export default function App() {
   const auth = useAuth()
   const committee = auth.isCommittee
 
-  const [screen, setScreen] = useState('app')     // app | login | preview
+  const [screen, setScreen] = useState(JOIN_LINK ? 'login' : 'app')     // app | login | preview
+  const [loginMode, setLoginMode] = useState(JOIN_LINK ? 'join' : 'signin')
   const [tab, setTab] = useState('overview')
   const [day, setDay] = useState(0)
   const [loaded, setLoaded] = useState(false)
@@ -61,6 +64,8 @@ export default function App() {
     return () => { off(); window.removeEventListener('focus', onFocus) }
   }, [auth.status, pull])
 
+  useEffect(() => { if (committee && screen === 'login') setScreen('app') }, [committee, screen])
+
   const cash = useMemo(
     () => donations.filter((d) => d.kind === 'money').reduce((s, d) => s + Number(d.amount || 0), 0),
     [donations])
@@ -84,7 +89,7 @@ export default function App() {
   }
 
   if (screen === 'login') {
-    return <Login auth={auth} onBack={() => setScreen('app')} />
+    return <Login auth={auth} onBack={() => setScreen('app')} initialMode={loginMode} />
   }
 
   // Not on the committee, or a member previewing what the public sees.
@@ -101,8 +106,11 @@ export default function App() {
           <div className="mgu-shell" style={{ paddingBottom: 0 }}>
             <div className="banner">
               You are signed in as <b>{auth.user?.email}</b>, but this account is not on the committee
-              list yet. Ask an admin to add you, then reload.
-              <button className="btn" style={{ marginTop: 8 }} onClick={auth.signOut}>Sign out</button>
+              list yet. Have the invite code from the WhatsApp group? Join with it below.
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="btn" onClick={auth.signOut}>Sign out</button>
+                <button className="btn" onClick={() => { setLoginMode('join'); setScreen('login') }}>Enter invite code</button>
+              </div>
             </div>
           </div>
         )}

@@ -37,9 +37,10 @@ export default function Team({ people, tasks, me }) {
           <Shield size={14} /> Adding or removing a member
         </h3>
         <div className="item-m">
-          In Supabase: <b>Authentication → Users → Add user</b>, then insert their User UID into the
-          <code> committee_members </code> table. Removing that row revokes their access immediately.
-          Full commands are in the README and in <code>supabase/schema.sql</code>.
+          Joining is self-serve: share the app link with <code>#join</code> and the current invite
+          code from the <code>invite_codes</code> table — codes expire and have limited uses. If needed,
+          an admin can also add someone manually in Supabase (<b>Authentication → Users</b>, then a row
+          in <code>committee_members</code>). Removing that row revokes their access immediately.
         </div>
         <div className="item-m" style={{ marginTop: 8 }}>
           Phone numbers here are visible to signed-in committee members only — never on the public page.
