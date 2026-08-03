@@ -66,12 +66,21 @@ h1,h2,h3,.display{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spac
 .btn:focus-visible,.bead:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
   outline:2px solid var(--marigold);outline-offset:2px;}
 
-.fld{display:block;margin-bottom:9px;}
+.fld{display:block;margin-bottom:9px;min-width:0;}
 .fld > span{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
   color:var(--muted);margin-bottom:5px;}
-input,select,textarea{width:100%;background:#1C1626;color:var(--paper);border:1px solid var(--edge);
-  border-radius:9px;padding:9px 10px;font-size:14px;font-family:Inter,sans-serif;}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+input,select,textarea{width:100%;min-width:0;max-width:100%;background:#1C1626;color:var(--paper);
+  border:1px solid var(--edge);border-radius:9px;padding:9px 10px;font-size:14px;
+  font-family:Inter,sans-serif;}
+/* iOS Safari gives date inputs an intrinsic width and centred text, which pushed them
+   out of their grid column and over the neighbouring field. */
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;
+  text-align:left;display:block;}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:start;}
+.two > *{min-width:0;}
+/* a date needs more room than a small count, so split the row unevenly */
+.two-date{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);}
+@media (max-width:359px){.two{grid-template-columns:minmax(0,1fr);}}
 
 .chip{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;
   padding:3px 8px;border-radius:99px;border:1px solid var(--edge);color:var(--muted);}

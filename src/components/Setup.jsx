@@ -22,7 +22,7 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
       <div className="card">
         <label className="fld"><span>Festival name</span>
           <input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></label>
-        <div className="two">
+        <div className="two two-date">
           <label className="fld"><span>First day (sthapana)</span>
             <input type="date" value={d.start_date}
               onChange={(e) => setD({ ...d, start_date: e.target.value })} /></label>
