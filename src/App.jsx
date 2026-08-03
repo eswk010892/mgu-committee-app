@@ -15,6 +15,7 @@ import Team from './components/Team.jsx'
 import Setup from './components/Setup.jsx'
 import PublicDashboard from './components/PublicDashboard.jsx'
 import Login from './components/Login.jsx'
+import GaneshMark from './components/GaneshMark.jsx'
 
 const TABS = [
   ['overview', 'Overview', Flame],
@@ -73,7 +74,13 @@ export default function App() {
     [cfg.start_date])
 
   if (auth.status === 'loading' || !loaded) {
-    return <div className="mgu-shell"><div className="empty">Loading…</div></div>
+    return (
+      <div className="mgu-shell mgu-boot">
+        <div className="gmark-lamp"><GaneshMark size={96} ring spin label="श्री गणेश" /></div>
+        <p className="mgu-eyebrow deva boot-namah">श्री गणेशाय नमः</p>
+        <p className="empty" role="status" aria-live="polite">Loading the board…</p>
+      </div>
+    )
   }
 
   if (screen === 'login') {
@@ -108,8 +115,8 @@ export default function App() {
   return (
     <>
       <div className="mgu-shell">
-        <header className="mgu-top">
-          <div className="mgu-eyebrow">श्री गणेशाय नमः</div>
+        <header className="mgu-top has-mark">
+          <div className="mgu-eyebrow deva">श्री गणेशाय नमः</div>
           <h1 className="mgu-title">{cfg.name}</h1>
           <div className="mgu-sub">
             {daysLeft > 0
@@ -117,6 +124,7 @@ export default function App() {
               : daysLeft === 0 ? 'Sthapana is today' : 'Festival underway'}
             {auth.profile?.name ? ` · ${auth.profile.name}` : ''}
           </div>
+          <GaneshMark size={124} className="mark-watermark" />
         </header>
 
         {auth.demo && (

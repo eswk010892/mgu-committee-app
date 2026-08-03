@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { Coins, Package, Radio } from 'lucide-react'
 import { dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
 import { DEVA } from '../lib/constants.js'
+import GaneshMark from './GaneshMark.jsx'
 
 /**
  * What anyone with the link sees. Read only, live.
@@ -20,8 +21,8 @@ export default function PublicDashboard({ cfg, events, donations, onLogin }) {
 
   return (
     <div className="mgu-shell" style={{ paddingBottom: 40 }}>
-      <header className="mgu-top">
-        <div className="mgu-eyebrow">श्री गणेशाय नमः</div>
+      <header className="mgu-top has-mark">
+        <div className="mgu-eyebrow deva">श्री गणेशाय नमः</div>
         <h1 className="mgu-title">{cfg.name}</h1>
         <div className="mgu-sub">
           {daysLeft > 0
@@ -29,6 +30,7 @@ export default function PublicDashboard({ cfg, events, donations, onLogin }) {
             : daysLeft === 0 ? 'Sthapana is today' : 'Festival underway'}
           {' · '}{nDays} days of celebration
         </div>
+        <GaneshMark size={124} className="mark-watermark" />
       </header>
 
       <div className="live"><Radio size={13} /> Live — this page updates by itself</div>

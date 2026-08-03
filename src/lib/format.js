@@ -1,5 +1,12 @@
 export const uid = () => Math.random().toString(36).slice(2, 10)
 
+/** Today's date as YYYY-MM-DD in the *local* timezone. `toISOString()` would give UTC,
+ *  which rolls over to tomorrow during Montreal evenings — exactly when donations land. */
+export const todayLocal = () => {
+  const d = new Date()
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
 export function dayDate(cfg, i) {
   const d = new Date((cfg.start_date || '2026-09-14') + 'T12:00:00')
   d.setDate(d.getDate() + i)

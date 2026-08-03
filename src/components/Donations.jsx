@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Plus, Trash2, Download, Coins, Package, Search, EyeOff } from 'lucide-react'
-import { money, toCSV, download } from '../lib/format.js'
+import { money, toCSV, download, todayLocal } from '../lib/format.js'
 import { MONEY_CATS, GOODS_CATS, ANON } from '../lib/constants.js'
 
 export default function Donations({ donations, addDonation, removeDonation, cash }) {
@@ -9,7 +9,7 @@ export default function Donations({ donations, addDonation, removeDonation, cash
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const blank = {
-    donor: '', amount: '', category: 'Interac', donated_on: new Date().toISOString().slice(0, 10),
+    donor: '', amount: '', category: 'Interac', donated_on: todayLocal(),
     item: '', qty: '', receipt_no: '', note: '', anonymous: false,
   }
   const [f, setF] = useState(blank)

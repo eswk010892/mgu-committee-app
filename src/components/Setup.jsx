@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Eye, LogOut } from 'lucide-react'
-import { download, toCSV } from '../lib/format.js'
+import { download, toCSV, todayLocal } from '../lib/format.js'
 
 export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPublic, data }) {
   const [d, setD] = useState(cfg)
@@ -12,7 +12,7 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
   }
 
   const backup = () => download(
-    'mgu-backup-' + new Date().toISOString().slice(0, 10) + '.json',
+    'mgu-backup-' + todayLocal() + '.json',
     JSON.stringify(data(), null, 2), 'application/json')
 
   return (

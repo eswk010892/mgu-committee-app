@@ -6,8 +6,14 @@
   --paper:#F4EADA; --muted:#9C90AC;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--night);color:var(--paper);font-family:Inter,system-ui,sans-serif;
+html{background:var(--night);}
+body{background:transparent;color:var(--paper);font-family:Inter,system-ui,sans-serif;
   min-height:100vh;-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(115% 55% at 50% -10%,rgba(242,160,7,.12),rgba(242,160,7,0) 60%),
+    radial-gradient(70% 40% at 108% 4%,rgba(214,52,28,.08),rgba(214,52,28,0) 62%),
+    radial-gradient(90% 45% at -8% 102%,rgba(78,154,107,.05),rgba(78,154,107,0) 60%);}
 h1,h2,h3,.display{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.02em;}
 .deva{font-family:'Tiro Devanagari Marathi',serif;}
 .num{font-family:'Space Mono',monospace;font-weight:700;letter-spacing:-.02em;}
@@ -15,8 +21,13 @@ h1,h2,h3,.display{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spac
 .mgu-shell{max-width:780px;margin:0 auto;padding:0 16px 120px;}
 .mgu-top{padding:22px 0 6px;}
 .mgu-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--marigold);font-weight:600;}
+.mgu-eyebrow.deva{font-family:'Tiro Devanagari Marathi',serif;text-transform:none;
+  letter-spacing:.02em;font-size:14px;font-weight:400;}
 .mgu-title{font-size:27px;font-weight:800;line-height:1.1;margin-top:6px;}
 .mgu-sub{color:var(--muted);font-size:13px;margin-top:6px;}
+.mgu-top.has-mark{position:relative;z-index:0;overflow:hidden;}
+.mark-watermark{position:absolute;z-index:-1;top:0;right:-26px;
+  color:var(--marigold);opacity:.07;pointer-events:none;}
 
 .garland{position:relative;padding:26px 0 18px;overflow-x:auto;}
 .garland::-webkit-scrollbar{display:none;}
@@ -86,7 +97,25 @@ input,select,textarea{width:100%;background:#1C1626;color:var(--paper);border:1p
   border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:10px;}
 .banner b{color:var(--vermilion);}
 
-@media (prefers-reduced-motion: reduce){*{transition:none !important;}}
+/* ---- devotional layer ---- */
+@keyframes mgu-aarti{to{stroke-dashoffset:-169.6;}}
+@keyframes mgu-breathe{0%,100%{opacity:.45;transform:scale(1);}50%{opacity:.75;transform:scale(1.06);}}
+@keyframes mgu-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+.mgu-boot{min-height:88vh;padding-bottom:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;text-align:center;}
+.gmark-lamp{position:relative;display:grid;place-items:center;color:var(--marigold);
+  animation:mgu-rise .45s ease-out .1s both;}
+.gmark-lamp::before{content:'';position:absolute;width:150px;height:150px;border-radius:99px;
+  background:radial-gradient(circle,rgba(242,160,7,.22),rgba(242,160,7,0) 70%);
+  animation:mgu-breathe 3.2s ease-in-out infinite;}
+.gmark-lamp .gmark{position:relative;}
+.g-ring{opacity:.28;}
+.g-aarti{stroke-dasharray:24 145.6;stroke-dashoffset:0;animation:mgu-aarti 2.4s linear infinite;}
+.boot-namah{color:var(--marigold);opacity:.9;animation:mgu-rise .45s ease-out .2s both;}
+.mgu-boot .empty{animation:mgu-rise .45s ease-out .3s both;}
+
+@media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important;}}
 @media (min-width:620px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
 
 /* --- auth / public additions --- */
@@ -109,3 +138,11 @@ i.priv{font-style:normal;font-size:9px;letter-spacing:.1em;text-transform:upperc
 .preview-bar .btn{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.4);color:#fff;
   text-transform:none;letter-spacing:0;padding:5px 10px;}
 code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1px 5px;font-size:11px;}
+
+/* Must stay LAST: freezes the aarti arc into a clean, complete halo rather than a
+   broken fragment. Deliberately not !important — it sets different properties than
+   the blanket animation:none rule above, so there is nothing to override. */
+@media (prefers-reduced-motion: reduce){
+  .g-aarti{stroke-dasharray:none;opacity:.35;}
+  .gmark-lamp::before{opacity:.85;}
+}
