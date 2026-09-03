@@ -76,18 +76,18 @@ Verified end to end in demo mode, by measurement rather than inspection:
 - **Double-booking is refused.** Requesting an item flips it to `pending`, so it stops
   being offered rather than letting a second donor fill in the whole form first
 - Confirm writes a `donations` row (category stays inside `MONEY_CATS`, dated with
-  `todayLocal()` not UTC) and Cash Raised, the goal meter and the public feed all update
+  `todayLocal()` not UTC); Cash Raised on the Overview and the public donor feed both update
 - Anonymous gifts show as `Anonymous` publicly with the real name in `donation_private`
 - **The public page exposes no donor email or phone**
 - Decline/undo removes the donation, the private row and frees the item
 - CSV export of the request queue
 - Amount is rejected when empty, zero or negative — in the database, not just the browser
 - Every colour on the donor page passes WCAG AA against live computed styles
-- No horizontal scroll at 375px or 320px; seven tabs fit a 320px phone
+- No horizontal scroll at 375px or 320px; the six tabs fit a 320px phone
 - `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correctly
 
-Bundle: **122.3 KB gzipped** (was 115.9) plus the crest as a separate 12.9 KB
-cached asset.
+Bundle: **120.6 KB gzipped** (was 115.9) plus the crest as a separate 12.9 KB cached
+asset — sponsorships added roughly 7 KB, removing the Donations tab gave ~1.7 KB back.
 
 ---
 
@@ -111,10 +111,11 @@ cached asset.
   after it silently breaks the aarti freeze. It is currently the final rule.
 - **Sponsorship amounts are validated in two places** — the `<input required>` and the
   SQL function. The database one is the real check; the browser one is a courtesy.
-- **Open follow-up from PR #1:** the date inputs in Tasks ("Due") and Donations
-  ("Date") sit in even 152px grid columns with roughly 1.5px of headroom. On iOS
-  Safari they are likely to clip — and because that fix adds `min-width:0`, they clip
-  silently rather than visibly overflowing. They need a mirrored wide-column variant.
+- **Open follow-up from PR #1:** the date input in Tasks ("Due") sits in an even 152px
+  grid column with roughly 1.5px of headroom. On iOS Safari it is likely to clip — and
+  because that fix adds `min-width:0`, it clips silently rather than visibly
+  overflowing. It needs a mirrored wide-column variant. The same applies to
+  `Donations.jsx` if that tab is ever restored.
 
 ---
 
