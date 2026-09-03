@@ -1,6 +1,6 @@
 # Handoff — Committee Board
 
-**Last session:** 2026-09-03 · sponsorships added
+**Last session:** 2026-09-03 · sponsorships added, then Overview reworked to Vamsi's notes
 
 > This repository is **public**. Credentials, the Supabase project ref, invite codes
 > and payment details are deliberately kept out of it — they live in the database or
@@ -30,6 +30,24 @@ prototype that could not run outside the tool it was authored in.
 `lib/api.js` (sponsorship data layer + demo adapters), `lib/constants.js`
 (`SPONSOR_CATS`, `PAY_METHODS`), `styles.css` (crest, scoped donor-page theme,
 tab bar tightened for seven tabs).
+
+### Overview and header reworked (Vamsi's notes, same day)
+
+- Header is now **crest on the left, wordmark on the right**, with a description
+  underneath. The description lives in `festival_config.description` and is edited
+  from Setup; `DEFAULT_DESCRIPTION` in `lib/constants.js` is only the fallback.
+- Day selector shows **"Day 1", "Day 2"…** as pills instead of bare numbers, and the
+  dates under them are larger. The strip scrolls horizontally once there are more days
+  than fit — all of them stay reachable.
+- **Cash raised is now the sponsorship total**, computed from confirmed
+  `sponsorship_requests` — the same figure the Sponsors tab exports to CSV.
+- **Removed:** In-kind gifts, Donors, the "Toward the goal" meter, and the whole
+  **Donations tab**. `Donations.jsx` is still on disk but no longer imported or routed.
+
+> **Assumption worth checking:** "Cash raised" counts **confirmed** requests only.
+> Pending ones are promises and declined ones are not money, so neither is counted —
+> even though the CSV export contains all three. If the intent was the total *pledged*,
+> it is a one-line change in `Overview.jsx`.
 
 ### Data model
 
