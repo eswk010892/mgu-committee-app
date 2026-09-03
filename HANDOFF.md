@@ -1,133 +1,134 @@
 # Handoff — Committee Board
 
-**Last session:** 2026-09-03 · sponsorships added, then Overview reworked to Vamsi's notes
+**Last session:** 2026-09-03 · sponsorships built; Overview reworked
 
 > This repository is **public**. Credentials, the Supabase project ref, invite codes
 > and payment details are deliberately kept out of it — they live in the database or
 > in the maintainer's private notes. Please keep it that way.
 
----
+## Current state
 
-## 1. What changed this session
+Vite + React 18 + Supabase. Six tabs: Overview, Schedule, Tasks, **Sponsors**, Team,
+Setup. Bundle **120.6 KB gzipped** plus a 12.9 KB crest asset.
 
-Sponsorships were added as a first-class feature, replacing a standalone HTML
-prototype that could not run outside the tool it was authored in.
-
-### New
+**Sponsorships are built and verified, but not deployed.** All of it is uncommitted
+work in the tree, and `supabase/sponsorships.sql` has **not been run** yet — nothing
+sponsorship-related exists in the database until it is.
 
 | File | What it is |
 | --- | --- |
-| `supabase/sponsorships.sql` | Schema, RLS and three security-definer functions. **Not yet run.** |
-| `src/components/Sponsors.jsx` | Committee tab — catalogue, request queue, confirm/decline, CSV |
-| `src/components/SponsorPublic.jsx` | Donor-facing page, reachable at `#sponsor`, no sign-in |
-| `src/components/Crest.jsx` | The committee crest |
-| `src/assets/mgu-crest.webp` | 192px alpha-masked WebP, 12.9 KB |
+| `supabase/sponsorships.sql` | Schema, RLS, three security-definer functions. **Not yet run.** |
+| `src/components/Sponsors.jsx` | Committee: catalogue, request queue, confirm/decline, CSV |
+| `src/components/SponsorPublic.jsx` | Donor page at `#sponsor`, no sign-in |
+| `src/components/Crest.jsx` + `src/assets/mgu-crest.webp` | The committee crest |
 
-### Modified
+Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`,
+`Setup.jsx`, `lib/api.js`, `lib/constants.js`, `styles.css`.
 
-`App.jsx` (Sponsors tab, `#sponsor` route, header crest), `PublicDashboard.jsx`
-(crest + sponsorship call-to-action), `Setup.jsx` (payment-details panel),
-`lib/api.js` (sponsorship data layer + demo adapters), `lib/constants.js`
-(`SPONSOR_CATS`, `PAY_METHODS`), `styles.css` (crest, scoped donor-page theme,
-tab bar tightened for seven tabs).
+### The data model
 
-### Overview and header reworked (Vamsi's notes, same day)
-
-- Header is now **crest on the left, wordmark on the right**, with a description
-  underneath. The description lives in `festival_config.description` and is edited
-  from Setup; `DEFAULT_DESCRIPTION` in `lib/constants.js` is only the fallback.
-- Day selector shows **"Day 1", "Day 2"…** as pills instead of bare numbers, and the
-  dates under them are larger. The strip scrolls horizontally once there are more days
-  than fit — all of them stay reachable.
-- **Cash raised is now the sponsorship total**, computed from confirmed
-  `sponsorship_requests` — the same figure the Sponsors tab exports to CSV.
-- **Removed:** In-kind gifts, Donors, the "Toward the goal" meter, and the whole
-  **Donations tab**. `Donations.jsx` is still on disk but no longer imported or routed.
-
-> **Assumption worth checking:** "Cash raised" counts **confirmed** requests only.
-> Pending ones are promises and declined ones are not money, so neither is counted —
-> even though the CSV export contains all three. If the intent was the total *pledged*,
-> it is a one-line change in `Overview.jsx`.
-
-### Data model
-
-- **`sponsorship_items`** — the catalogue. Public read, committee write.
-  `day_index` is 0-based to match `events.day`; `NULL` means "general / any day".
-  `amount` of `0` means "open amount — donor names the figure".
-  `status` is `available` | `pending` | `taken`.
-- **`sponsorship_requests`** — donor name, email, phone. **Committee read only.**
-  No anon policy at all, and deliberately left out of the realtime publication.
-- **`submit_sponsorship()`** — the gate anonymous donors go through instead of a
-  direct insert. Validates name, email and amount server-side and refuses an item
-  that is already claimed. Same shape as the existing `join_committee()`.
+- **`sponsorship_items`** — the catalogue. Public read, committee write. `day_index`
+  is 0-based to match `events.day`, `NULL` = general/any day. `amount` `0` = open
+  amount. `status` is `available` | `pending` | `taken`.
+- **`sponsorship_requests`** — donor name, email, phone. **Committee read only**, no
+  anon policy, deliberately out of the realtime publication.
+- **`submit_sponsorship()`** — the gate anonymous donors use instead of a direct
+  insert. Validates name/email/amount server-side, refuses a claimed item.
 - **`confirm_sponsorship()` / `decline_sponsorship()`** — committee only. Confirming
-  writes a real `donations` row (plus `donation_private` for the real name), so
-  sponsorship money counts toward the goal and appears in the public feed.
-  Declining reverses all of it and frees the item.
+  writes a real `donations` row (+ `donation_private`); declining reverses it.
 
----
+### Verified working (measured, in demo mode)
 
-## 2. Current state — what works
+Catalogue CRUD · donor submit · **double-booking refused** · confirm → `donations`
+row → Cash Raised and the public feed update · anonymous shows `Anonymous` with the
+real name private · **public page exposes no email or phone** · decline reverses
+everything · CSV export · amount rejected when empty/negative server-side · every
+donor-page colour passes WCAG AA against live computed styles · no horizontal scroll
+at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correctly.
 
-Verified end to end in demo mode, by measurement rather than inspection:
+## Gotchas — things that look wrong but are correct
 
-- Catalogue create / edit / delete, across days, categories, general and open-amount items
-- Donor submission, including the general "any amount" path
-- **Double-booking is refused.** Requesting an item flips it to `pending`, so it stops
-  being offered rather than letting a second donor fill in the whole form first
-- Confirm writes a `donations` row (category stays inside `MONEY_CATS`, dated with
-  `todayLocal()` not UTC); Cash Raised on the Overview and the public donor feed both update
-- Anonymous gifts show as `Anonymous` publicly with the real name in `donation_private`
-- **The public page exposes no donor email or phone**
-- Decline/undo removes the donation, the private row and frees the item
-- CSV export of the request queue
-- Amount is rejected when empty, zero or negative — in the database, not just the browser
-- Every colour on the donor page passes WCAG AA against live computed styles
-- No horizontal scroll at 375px or 320px; the six tabs fit a 320px phone
-- `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correctly
+- **Payment details are configuration, not code.** Interac email and answer live in
+  `festival_config`, edited from Setup. Not in this repo — it is public. Blank email
+  ⇒ the donor page shows no payment details at all. `festival_config` is public-read,
+  which is right: every donor must be told the answer for a transfer to work; the
+  account's protection is the inbox receiving the deposit link.
+- **`sponsorship_items.status` has three values.** Dropping `pending` back to a
+  boolean reintroduces the double-booking hole.
+- **`.sp-page` scopes the light palette on purpose** — the donor page is a trial while
+  the rest stays dark. If adopted, those tokens move to `:root`.
+- **The reduced-motion block must stay last in `styles.css`.** Rules after it silently
+  break the aarti freeze. It is currently the final rule.
+- **Amount is validated twice** — `<input required>` and the SQL function. The
+  database one is the real check.
+- `Donations.jsx` is still on disk but no longer imported or routed.
 
-Bundle: **120.6 KB gzipped** (was 115.9) plus the crest as a separate 12.9 KB cached
-asset — sponsorships added roughly 7 KB, removing the Donations tab gave ~1.7 KB back.
+## Open decisions
 
----
+- **"Cash raised" counts confirmed requests only** — pending are promises, declined
+  are not money, even though the CSV contains all three. Confirmed as the intent
+  2026-09-03. Switching to total *pledged* is a one-line change in `Overview.jsx`.
+- **Does the lighter donor-page look roll out to the whole app?** The sponsor page is
+  the trial.
+- **Whose branch is the base?** Vamsi has his own local build with a separate
+  sponsorship implementation. This tree was written from scratch; his HTML was
+  reference only. Agree the base before either side goes further.
 
-## 3. Known issues and gotchas
-
-- **`supabase/sponsorships.sql` has not been run yet.** Nothing sponsorship-related
-  exists in the database until it is. Confirm the project ref before running it.
-- **Payment details are configuration, not code.** The Interac email and security
-  answer live in `festival_config` and are edited from Setup. They are intentionally
-  not in this repo — it is public. Leave the email blank and the donor page shows no
-  payment details at all and simply says a committee member will be in touch.
-  `festival_config` is public-read, which is correct: every donor has to be told the
-  answer for a transfer to work. The account's protection is the inbox that receives
-  the deposit link.
-- **`sponsorship_items.status` has three values, not two.** Dropping `pending` back to
-  a boolean reintroduces the double-booking hole.
-- **`.sp-page` scopes the light palette on purpose.** The donor page is a trial of a
-  lighter look while the rest of the app stays dark. If it is adopted, those tokens
-  move to `:root`; until then the scoping is what stops it leaking.
-- **The reduced-motion block at the end of `styles.css` must stay last.** Adding rules
-  after it silently breaks the aarti freeze. It is currently the final rule.
-- **Sponsorship amounts are validated in two places** — the `<input required>` and the
-  SQL function. The database one is the real check; the browser one is a courtesy.
-- **Open follow-up from PR #1:** the date input in Tasks ("Due") sits in an even 152px
-  grid column with roughly 1.5px of headroom. On iOS Safari it is likely to clip — and
-  because that fix adds `min-width:0`, it clips silently rather than visibly
-  overflowing. It needs a mirrored wide-column variant. The same applies to
-  `Donations.jsx` if that tab is ever restored.
-
----
-
-## 4. Next steps
+## Next steps
 
 1. Run `supabase/sponsorships.sql` in the Supabase SQL editor. **Confirm the project
-   ref first** — there is a same-named `events` table in an unrelated project.
-2. Set the Interac email and security answer in **Setup → Sponsorship payment
-   details**. Do not put them in the source.
-3. Add the real sponsorship items with the committee — aartis, meals, decor, sound —
-   with prices, plus a few open-amount entries.
-4. Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`, then address
-   the Tasks/Donations date columns noted above.
-5. Decide whether the lighter donor-page look should roll out to the whole app.
-6. Send the `#sponsor` link to the committee for a dry run before it goes to donors.
+   ref first** — an unrelated project has a same-named `events` table, and because the
+   script uses `create table if not exists`, running it there would skip creation and
+   apply a public-read policy to that table instead.
+2. Set the Interac email and answer in **Setup → Sponsorship payment details**.
+   Change the answer if the one from the prototype is real — it has been sitting in a
+   public repo.
+3. Commit and push the feature work (only `HANDOFF.md` is committed so far).
+4. Add the real sponsorship items with the committee.
+5. Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`, then give the
+   Tasks "Due" date its own wide column (see archive).
+6. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
+
+<!-- HANDOFF:ARCHIVE-BELOW -->
+
+## Archive — 2026-09-03 session detail
+
+### Vamsi's two branches, reviewed
+
+- **PR #1 `claude/setup-page-tab-layout-mjk1b2`** — date field overflowing on mobile
+  Safari. **Real bug, correct fix.** Root cause measured: `1fr` = `minmax(auto,1fr)`,
+  so the date input's 150.5px min-content pushed its column to 150.5/98.5 instead of
+  even. Fix is `minmax(0,1fr)` + `min-width:0`. Verified no overflow at 375/320px,
+  +0.11 KB gzipped. **Good to merge.** Two follow-ups: the date input in Tasks ("Due")
+  sits in an even 152px column with ~1.5px of headroom and will likely clip on iOS
+  Safari — silently, because `min-width:0` turns overflow into clipping — so it needs
+  a mirrored wide-column variant (same for `Donations.jsx` if that tab returns); and
+  `.two-date` only beats the ≤359px stacking rule by source order.
+- **`feature/sponsors-page`** — a 1,328-line standalone `sponsors-ganesh.html` at the
+  repo root. **Not merged.** Authored as a Claude Artifact: its whole data layer is
+  `claude.use('db')`, which does not exist outside claude.ai (`ReferenceError: claude
+  is not defined`, verified by serving it). Also a bare fragment with no
+  doctype/charset/viewport, so it renders at 980px on a phone and shows mojibake; it
+  hard-coded an admin password and an Interac security answer in a **public repo**;
+  stored donor PII with no access control; and weighed 577 KB (400 KB gzipped)
+  because the logo JPEG was embedded twice. **Its design and information architecture
+  were kept** and rebuilt on React + Supabase.
+
+### Overview and header rework (Vamsi's notes, same day)
+
+- Header became **crest left, wordmark right**, description underneath. The
+  description lives in `festival_config.description`, edited from Setup;
+  `DEFAULT_DESCRIPTION` in `lib/constants.js` is only the fallback.
+- Day selector shows **"Day 1", "Day 2"…** as pills instead of bare numbers, dates
+  enlarged. The strip scrolls once days outrun the width; all stay reachable.
+- **Cash raised became the sponsorship total**, from confirmed `sponsorship_requests`.
+- **Removed:** In-kind gifts, Donors, the "Toward the goal" meter, and the whole
+  **Donations tab**.
+
+### Earlier sessions (2026-08-02/03)
+
+Deployed to Vercel; GitHub Pages retired. Supabase schema run, RLS verified, env vars
+wired, real festival details seeded. Self-serve joining shipped via invite codes and
+the `join_committee()` security-definer function; email confirmation deliberately
+disabled. Supabase auth Site URL and redirect allow-list configured — password reset
+had never worked before that.
