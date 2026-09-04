@@ -73,12 +73,11 @@ URL correctly. Full demo-mode walkthrough in the archive.
 - **Phone is required by `submit_sponsorship()`, not by the column.** The column stays
   nullable because a request confirmed before 2026-09-03 has none, and that is a real
   record — not something to backfill with a fake number.
-- **The public page is two tabs, Schedule and Donate.** Schedule reuses `Garland`, the
-  committee's day selector, so a visitor picks a day instead of scrolling past all of
-  them. Donate embeds the real sponsorship page plus the donor feed.
-- **`.mgu-shell` widens at 1024px and 1440px.** The public link gets opened on laptops;
-  a fixed 780px column left most of the screen empty. From 1024px the programme is a
-  two-column board and the sponsor page sits beside the donor feed.
+- **The public page is two tabs, Schedule and Donate**, and `.mgu-shell` widens at 1024px
+  and 1440px. Schedule reuses `Garland` so a visitor picks a day rather than scrolling
+  past all of them; Donate embeds the real sponsorship page plus the donor feed. From
+  1024px the programme is a two-column board and those two sit side by side — a fixed
+  780px column left most of a laptop screen empty.
 - **The Sponsors tab has a Manage / Donor view toggle.** Donor view renders
   `SponsorPublic` with `embedded`, which drops the back bar and hero lede and boxes it as
   a card. It is live, not a mockup — submitting from there creates a real request, which
@@ -106,9 +105,8 @@ URL correctly. Full demo-mode walkthrough in the archive.
 
 1. **Add the real sponsorship items** — the catalogue is empty, so every day currently
    shows "Nothing listed here yet". Sponsors tab → Add.
-2. ~~Config corrections~~ — **done 2026-09-03.** `days = 5` (Sep 14–18, visarjan Friday)
-   and `goal = 25000`, both confirmed live. Note the goal is **not rendered anywhere**
-   since the meter came off the Overview — it is stored correctly, but invisible.
+2. **Config is `days = 6` (Sep 14–19), `goal = 25000`.** Six is correct — confirmed by
+   Eswar 2026-09-04 after a member set it. Earlier notes saying five are superseded.
 3. ~~Delete `feature/sponsors-page`~~ — **done 2026-09-03.** A copy of the original is
    archived outside the repo at `../reference/vamsi-original/`.
    **Caveat, verified not assumed:** deleting the branch did *not* remove the content.
