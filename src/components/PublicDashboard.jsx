@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { Coins, Package, Radio, Calendar, HandHeart } from 'lucide-react'
 import { dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
 import { DEVA, DEFAULT_DESCRIPTION } from '../lib/constants.js'
@@ -20,11 +20,6 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
   const [tab, setTab] = useState('schedule')      // schedule | donate
   const [day, setDay] = useState(0)
-
-  const cash = useMemo(
-    () => donations.filter((d) => d.kind === 'money').reduce((s, d) => s + Number(d.amount || 0), 0),
-    [donations])
-  const goods = donations.filter((d) => d.kind === 'goods').length
 
   const daysLeft = Math.ceil((new Date(cfg.start_date + 'T12:00:00') - new Date()) / 86400000)
 
@@ -77,7 +72,7 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
             </div>
             {dayEvents.length === 0
               ? <div className="empty">Programme for this day to be announced.</div>
-              : dayEvents.map((e) => (
+              : <div className="pub-day-list">{dayEvents.map((e) => (
                 <div className="pub-ev" key={e.id}>
                   <span className="pub-ev-time">{e.start_time || '—'}</span>
                   <div className="pub-ev-body">
@@ -85,21 +80,17 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
                     {e.place && <div className="pub-ev-place">{e.place}</div>}
                   </div>
                 </div>
-              ))}
+              ))}</div>}
           </div>
         </>
       ) : (
-        <>
+        <div className="donate-cols">
           <SponsorPublic embedded cfg={cfg} items={sponsorItems} submit={submitSponsorship} />
 
-          <h2 style={{ fontSize: 18, margin: '22px 0 4px' }}>Our donors</h2>
+          <div className="donate-feed">
+          <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>Our donors</h2>
           <div className="item-m" style={{ marginBottom: 10 }}>
             Thank you to everyone supporting this year&apos;s Ganeshotsav.
-          </div>
-
-          <div className="stat-grid stat-grid-2">
-            <div className="stat"><div className="stat-k">Received</div><div className="stat-v num">{money(cash)}</div></div>
-            <div className="stat"><div className="stat-k">Food &amp; goods</div><div className="stat-v num">{goods}</div></div>
           </div>
 
           <div className="card" style={{ marginTop: 10 }}>
@@ -124,7 +115,8 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
               </div>
             ))}
           </div>
-        </>
+          </div>
+        </div>
       )}
 
       <div style={{ textAlign: 'center', margin: '26px 0 10px' }}>

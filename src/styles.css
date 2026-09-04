@@ -19,6 +19,10 @@ h1,h2,h3,.display{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spac
 .num{font-family:'Space Mono',monospace;font-weight:700;letter-spacing:-.02em;}
 
 .mgu-shell{max-width:780px;margin:0 auto;padding:0 16px 120px;}
+/* Mobile-first is right for volunteers at the mandap, but the public link gets
+   opened on laptops too — let the container use the screen it is given. */
+@media (min-width:1024px){.mgu-shell{max-width:1040px;padding-left:24px;padding-right:24px;}}
+@media (min-width:1440px){.mgu-shell{max-width:1200px;}}
 .mgu-top{padding:22px 0 6px;}
 .mgu-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--marigold);font-weight:600;}
 .mgu-eyebrow.deva{font-family:'Tiro Devanagari Marathi',serif;text-transform:none;
@@ -167,6 +171,17 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
 .pubtab[data-on="1"]{background:var(--marigold);border-color:var(--marigold);color:#2B1B00;}
 @media (max-width:360px){.pubtab{font-size:14px;padding:13px 8px;gap:6px;}}
 
+/* Desktop only: the programme is a two-column board rather than one tall list,
+   and the sponsor page sits beside the donor feed instead of above it. */
+@media (min-width:1024px){
+  .pub-day-list{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;}
+  .pub-day-list .pub-ev:nth-last-child(2):nth-child(odd){border-bottom:none;}
+  .donate-cols{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
+    gap:22px;align-items:start;}
+  .donate-feed{position:sticky;top:16px;}
+  .pubtabs{max-width:520px;}
+}
+
 /* Public programme rows. The committee's compact .item is too quiet for a
    visitor reading at arm's length — the time leads, the title carries weight,
    and the place is legible rather than a whisper. */
@@ -251,6 +266,7 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
 .sp-tab[data-on="1"]{color:var(--sp-flame);border-bottom-color:var(--sp-flame);}
 
 .sp-items{padding:16px;max-width:780px;margin:0 auto;}
+.sp-embed .sp-items{max-width:none;}
 .sp-cat + .sp-cat{margin-top:22px;}
 .sp-cat-label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;
   color:var(--sp-gold);font-weight:700;margin-bottom:9px;}
