@@ -42,19 +42,13 @@ Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`, `Setu
 
 ### Verified against the live database (2026-09-03)
 
-Ran, then probed with the **anonymous** key over REST, with real rows present:
-
-- 2 tables, 4 new `festival_config` columns, RLS on both, 4 policies, 3 security-definer
-  functions, the double-booking unique index, realtime publishing `sponsorship_items` only,
-  and `submit_sponsorship` executable by `anon, authenticated` — all confirmed by query.
-- anon **can** read `sponsorship_items`; anon **cannot** read `sponsorship_requests` —
-  it returned `[]` while a real request with name, email and phone existed. **This closes
-  the long-standing gap where the RLS probe had only ever run against empty tables.**
-- anon direct `INSERT` into `sponsorship_requests` → HTTP 401, RLS violation.
-- anon `confirm_sponsorship` → `not-allowed`.
-- Double-booking through the gate → `item-taken`.
-- Validation through the gate → `bad-amount` (0 and negative), `bad-email`, `no-name`.
-- `donation_private`, `committee_members`, `invite_codes` all return `[]` to anon.
+Probed with the **anonymous** key over REST, with real rows present. All schema objects
+confirmed by query. anon **can** read `sponsorship_items`; anon **cannot** read
+`sponsorship_requests` — `[]` while a real request with name, email and phone existed,
+**closing the long-standing gap where the probe had only ever run on empty tables**.
+Direct anon `INSERT` → HTTP 401. `confirm`/`decline` → `not-allowed`. Double-booking →
+`item-taken`. Validation → `bad-amount` (0 and negative), `bad-email`, `no-name`.
+`donation_private`, `committee_members`, `invite_codes` all `[]` to anon.
 
 Probe rows were removed afterwards; all sponsorship tables and `donations` are back to 0.
 
