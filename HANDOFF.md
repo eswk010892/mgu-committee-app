@@ -61,14 +61,9 @@ Ran, then probed with the **anonymous** key over REST, with real rows present:
 
 Probe rows were removed afterwards; all sponsorship tables and `donations` are back to 0.
 
-### Verified working (measured, in demo mode)
-
-Catalogue CRUD · donor submit · **double-booking refused** · confirm → `donations`
-row → Cash Raised and the public feed update · anonymous shows `Anonymous` with the
-real name private · **public page exposes no email or phone** · decline reverses
-everything · CSV export · amount rejected when empty/negative server-side · every
-donor-page colour passes WCAG AA against live computed styles · no horizontal scroll
-at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correctly.
+Front end: every donor-page colour passes WCAG AA against live computed styles, no
+horizontal scroll at 320 or 375px, and `BASE_PATH=/mgu-committee-app/` rewrites the crest
+URL correctly. Full demo-mode walkthrough in the archive.
 
 ## Gotchas — things that look wrong but are correct
 
@@ -124,6 +119,13 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
 <!-- HANDOFF:ARCHIVE-BELOW -->
 
 ## Archive — 2026-09-03 session detail
+
+### Demo-mode walkthrough (superseded by the live-database verification above)
+
+Catalogue CRUD · donor submit · double-booking refused · confirm → `donations` row →
+Cash Raised and the public feed update · anonymous shows `Anonymous` with the real name
+private · public page exposes no email or phone · decline reverses everything · CSV
+export · amount rejected when empty/negative server-side · six tabs fit a 320px phone.
 
 ### Vamsi's two branches, reviewed
 
