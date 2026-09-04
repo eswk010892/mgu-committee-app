@@ -21,15 +21,12 @@ published in Vamsi's `feature/sponsors-page` branch** — Eswar chose to keep it
 rotatable from Setup with no redeploy, and deleting that branch would remove the copy
 sitting in git history.
 
-| File | What it is |
-| --- | --- |
-| `supabase/sponsorships.sql` | Schema, RLS, three security-definer functions. **Run 2026-09-03.** |
-| `src/components/Sponsors.jsx` | Committee: catalogue, request queue, confirm/decline, CSV |
-| `src/components/SponsorPublic.jsx` | Donor page — full screen at `#sponsor`, and embedded in the Sponsors tab via `embedded` |
-| `src/components/Crest.jsx` + `src/assets/mgu-crest.webp` | The committee crest |
-
-Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`,
-`Setup.jsx`, `lib/api.js`, `lib/constants.js`, `styles.css`.
+Added: `supabase/sponsorships.sql` (schema, RLS, three security-definer functions —
+**run 2026-09-03**), `components/Sponsors.jsx` (committee: catalogue, queue, CSV),
+`components/SponsorPublic.jsx` (donor page — full screen at `#sponsor`, embedded
+elsewhere via `embedded`), `components/Crest.jsx` + `assets/mgu-crest.webp`.
+Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`, `Setup.jsx`,
+`lib/api.js`, `lib/constants.js`, `styles.css`.
 
 ### The data model
 
@@ -74,6 +71,14 @@ URL correctly. Full demo-mode walkthrough in the archive.
   account's protection is the inbox receiving the deposit link.
 - **`sponsorship_items.status` has three values.** Dropping `pending` back to a
   boolean reintroduces the double-booking hole.
+- **`Setup.jsx` re-syncs its form from `cfg` while untouched, via a `dirty` ref.**
+  Do not simplify it back to `useState(cfg)`. That snapshots the config once on mount and
+  every Save writes the snapshot over all fields, so a member with Setup open while
+  somebody else edits silently reverts them. It reset the festival length and goal on
+  2026-09-03 with 11 members testing.
+- **The public page is two tabs, Schedule and Donate.** Schedule reuses `Garland`, the
+  committee's day selector, so a visitor picks a day instead of scrolling past all of
+  them. Donate embeds the real sponsorship page plus the donor feed.
 - **The Sponsors tab has a Manage / Donor view toggle.** Donor view renders
   `SponsorPublic` with `embedded`, which drops the back bar and hero lede and boxes it as
   a card. It is live, not a mockup — submitting from there creates a real request, which
