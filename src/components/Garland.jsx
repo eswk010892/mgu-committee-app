@@ -15,9 +15,11 @@ export default function Garland({ cfg, day, setDay, events }) {
             <button key={i} className="bead" data-on={day === i ? '1' : '0'}
               data-last={i === n - 1 ? '1' : '0'} onClick={() => setDay(i)}
               aria-label={`Day ${i + 1}, ${fmtDay(d)}, ${count} items`}>
-              <span className="bead-dot">{i + 1}</span>
+              <span className="bead-dot">Day {i + 1}</span>
               <span className="bead-label">
-                {d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}<br />
+                <span className="bead-date">
+                  {d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                </span>
                 <span className="deva">{DEVA[i] || ''}</span>
               </span>
             </button>

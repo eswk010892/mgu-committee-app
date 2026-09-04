@@ -11,12 +11,13 @@
  */
 import { supabase, isConfigured } from './supabase.js'
 import { DEFAULT_CFG, ANON } from './constants.js'
-import { uid } from './format.js'
+import { uid, todayLocal } from './format.js'
 
 /* ------------------------------------------------------------------ demo -- */
 
 const LS = 'mgu:demo'
-const blank = { cfg: DEFAULT_CFG, events: [], notes: {}, donations: [], priv: {}, tasks: [], people: [] }
+const blank = { cfg: DEFAULT_CFG, events: [], notes: {}, donations: [], priv: {}, tasks: [], people: [],
+                sponsorItems: [], sponsorRequests: [] }
 const readDemo = () => {
   try { return { ...blank, ...JSON.parse(localStorage.getItem(LS) || '{}') } }
   catch { return { ...blank } }
@@ -156,6 +157,151 @@ export async function removeTask(id) {
   if (!isConfigured) { const d = readDemo(); d.tasks = d.tasks.filter((t) => t.id !== id); writeDemo(d); return }
   const { error } = await supabase.from('tasks').delete().eq('id', id)
   if (error) throw error
+}
+
+/* ---------------------------------------------------------- sponsorships -- */
+
+/** The catalogue. Public — this is what donors browse. */
+export async function getSponsorItems() {
+  if (!isConfigured) return readDemo().sponsorItems
+  const { data, error } = await supabase.from('sponsorship_items')
+    .select('*').order('day_index', { nullsFirst: false }).order('sort_order')
+  if (error) { console.error(error); return [] }
+  return data || []
+}
+
+/** Requests carry donor email and phone. RLS returns nothing to a non-member. */
+export async function getSponsorRequests() {
+  if (!isConfigured) return readDemo().sponsorRequests
+  const { data, error } = await supabase.from('sponsorship_requests')
+    .select('*').order('created_at', { ascending: false })
+  if (error) { console.error(error); return [] }
+  return data || []
+}
+
+export async function addSponsorItem(item) {
+  if (!isConfigured) {
+    const d = readDemo()
+    d.sponsorItems.push({ ...item, id: uid(), status: 'available', sponsor_name: null,
+                          created_at: new Date().toISOString() })
+    writeDemo(d); return
+  }
+  const { error } = await supabase.from('sponsorship_items').insert(item)
+  if (error) throw error
+}
+
+export async function updateSponsorItem(id, patch) {
+  if (!isConfigured) {
+    const d = readDemo()
+    d.sponsorItems = d.sponsorItems.map((i) => (i.id === id ? { ...i, ...patch } : i))
+    writeDemo(d); return
+  }
+  const { error } = await supabase.from('sponsorship_items').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function removeSponsorItem(id) {
+  if (!isConfigured) {
+    const d = readDemo()
+    d.sponsorItems = d.sponsorItems.filter((i) => i.id !== id)
+    d.sponsorRequests = d.sponsorRequests.map((r) => (r.item_id === id ? { ...r, item_id: null } : r))
+    writeDemo(d); return
+  }
+  const { error } = await supabase.from('sponsorship_items').delete().eq('id', id)
+  if (error) throw error
+}
+
+/**
+ * Public submission. Goes through the security-definer gate rather than a
+ * direct insert, so the amount and the item's availability are checked in the
+ * database — the browser is not trusted with either.
+ * Resolves to a short status string: 'ok' | 'item-taken' | 'bad-amount' | …
+ */
+export async function submitSponsorship(f) {
+  if (!isConfigured) {
+    const d = readDemo()
+    const item = f.itemId ? d.sponsorItems.find((i) => i.id === f.itemId) : null
+    if (f.itemId && !item) return 'no-such-item'
+    if (item && item.status !== 'available') return 'item-taken'
+    if (item && d.sponsorRequests.some((r) => r.item_id === item.id && r.status !== 'declined'))
+      return 'item-taken'
+    const amount = item && Number(item.amount) > 0 ? Number(item.amount) : Number(f.amount)
+    if (!amount || amount <= 0) return 'bad-amount'
+    if (!f.name?.trim()) return 'no-name'
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email || '')) return 'bad-email'
+    if (!f.payMethod) return 'no-pay-method'
+    d.sponsorRequests.unshift({
+      id: uid(), item_id: f.itemId || null,
+      item_label: item ? item.title : 'General sponsorship',
+      item_day: item ? item.day_index : (f.day ?? null),
+      kind: item ? 'item' : 'general',
+      donor_name: f.name.trim(), org: f.org?.trim() || null,
+      email: f.email.trim().toLowerCase(), phone: f.phone?.trim() || null,
+      amount, pay_method: f.payMethod, show_name: f.showName !== false,
+      message: f.message?.trim() || null, status: 'pending', donation_id: null,
+      created_at: new Date().toISOString(),
+    })
+    if (item) d.sponsorItems = d.sponsorItems.map((i) =>
+      (i.id === item.id ? { ...i, status: 'pending' } : i))
+    writeDemo(d); return 'ok'
+  }
+  const { data, error } = await supabase.rpc('submit_sponsorship', {
+    p_item_id: f.itemId || null,
+    p_donor_name: f.name,
+    p_email: f.email,
+    p_amount: f.amount ? Number(f.amount) : null,
+    p_pay_method: f.payMethod,
+    p_org: f.org || null,
+    p_phone: f.phone || null,
+    p_message: f.message || null,
+    p_show_name: f.showName !== false,
+    p_day: f.day ?? null,
+  })
+  if (error) { console.error(error); return 'error' }
+  return data
+}
+
+/** Committee: accept a request. Creates the matching donation row. */
+export async function confirmSponsorship(id) {
+  if (!isConfigured) {
+    const d = readDemo()
+    const r = d.sponsorRequests.find((x) => x.id === id)
+    if (!r || r.status === 'confirmed') return 'already-confirmed'
+    const pub = r.show_name ? (r.org || r.donor_name) : ANON
+    const did = uid()
+    d.donations.unshift({ id: did, donor: pub, kind: 'money', category: r.pay_method,
+                          amount: r.amount, donated_on: todayLocal(),
+                          created_at: new Date().toISOString() })
+    d.priv[did] = { real_name: r.donor_name,
+                    note: `Sponsorship: ${r.item_label || 'General'} · ${r.email}` }
+    r.status = 'confirmed'; r.donation_id = did
+    if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
+      (i.id === r.item_id ? { ...i, status: 'taken', sponsor_name: pub } : i))
+    writeDemo(d); return 'ok'
+  }
+  const { data, error } = await supabase.rpc('confirm_sponsorship', { p_request_id: id })
+  if (error) throw error
+  return data
+}
+
+/** Committee: decline or reopen. Frees the item and removes any donation row. */
+export async function declineSponsorship(id) {
+  if (!isConfigured) {
+    const d = readDemo()
+    const r = d.sponsorRequests.find((x) => x.id === id)
+    if (!r) return 'no-such-request'
+    if (r.donation_id) {
+      d.donations = d.donations.filter((x) => x.id !== r.donation_id)
+      delete d.priv[r.donation_id]
+    }
+    r.status = 'declined'; r.donation_id = null
+    if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
+      (i.id === r.item_id ? { ...i, status: 'available', sponsor_name: null } : i))
+    writeDemo(d); return 'ok'
+  }
+  const { data, error } = await supabase.rpc('decline_sponsorship', { p_request_id: id })
+  if (error) throw error
+  return data
 }
 
 /* ------------------------------------------------------------- live feed -- */

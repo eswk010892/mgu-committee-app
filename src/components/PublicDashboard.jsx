@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react'
-import { Coins, Package, Radio } from 'lucide-react'
+import { Coins, Package, Radio, HandHeart } from 'lucide-react'
 import { dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
-import { DEVA } from '../lib/constants.js'
+import { DEVA, DEFAULT_DESCRIPTION } from '../lib/constants.js'
 import GaneshMark from './GaneshMark.jsx'
+import Crest from './Crest.jsx'
 
 /**
  * What anyone with the link sees. Read only, live.
  * Receives only data the database allows the public to read.
  */
-export default function PublicDashboard({ cfg, events, donations, onLogin }) {
+export default function PublicDashboard({ cfg, events, donations, sponsorItems = [], onSponsor, onLogin }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
 
   const cash = useMemo(
@@ -22,18 +23,40 @@ export default function PublicDashboard({ cfg, events, donations, onLogin }) {
   return (
     <div className="mgu-shell" style={{ paddingBottom: 40 }}>
       <header className="mgu-top has-mark">
-        <div className="mgu-eyebrow deva">श्री गणेशाय नमः</div>
-        <h1 className="mgu-title">{cfg.name}</h1>
-        <div className="mgu-sub">
-          {daysLeft > 0
-            ? `Begins in ${daysLeft} day${daysLeft === 1 ? '' : 's'} · ${fmtDay(dayDate(cfg, 0))}`
-            : daysLeft === 0 ? 'Sthapana is today' : 'Festival underway'}
-          {' · '}{nDays} days of celebration
+        <div className="mgu-id">
+          <Crest size={76} className="mgu-id-crest" />
+          <div className="mgu-id-text">
+            <div className="mgu-eyebrow deva">श्री गणेशाय नमः</div>
+            <h1 className="mgu-title">{cfg.name}</h1>
+            <div className="mgu-sub">
+              {daysLeft > 0
+                ? `Begins in ${daysLeft} day${daysLeft === 1 ? '' : 's'} · ${fmtDay(dayDate(cfg, 0))}`
+                : daysLeft === 0 ? 'Sthapana is today' : 'Festival underway'}
+              {' · '}{nDays} days of celebration
+            </div>
+          </div>
         </div>
+        <p className="mgu-desc">{cfg.description || DEFAULT_DESCRIPTION}</p>
         <GaneshMark size={124} className="mark-watermark" />
       </header>
 
       <div className="live"><Radio size={13} /> Live — this page updates by itself</div>
+
+      {onSponsor && (
+        <div className="card sponsor-cta">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="item-t">Sponsor a part of the festival</div>
+            <div className="item-m">
+              {sponsorItems.some((i) => i.status !== 'taken')
+                ? `${sponsorItems.filter((i) => i.status !== 'taken').length} still available — an aarti, a meal, the decorations.`
+                : 'Give any amount toward this year’s celebration.'}
+            </div>
+          </div>
+          <button className="btn btn-go" onClick={onSponsor}>
+            <HandHeart size={14} /> Sponsor
+          </button>
+        </div>
+      )}
 
       <div className="stat-grid">
         <div className="stat"><div className="stat-k">Days</div><div className="stat-v num">{nDays}</div></div>

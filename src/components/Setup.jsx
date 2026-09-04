@@ -7,7 +7,10 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
   const [saved, setSaved] = useState(false)
 
   const save = async () => {
-    await saveConfig({ name: d.name, start_date: d.start_date, days: Number(d.days), goal: Number(d.goal) })
+    await saveConfig({ name: d.name, start_date: d.start_date, days: Number(d.days), goal: Number(d.goal),
+      description: d.description || null,
+      interac_email: d.interac_email || null, interac_answer: d.interac_answer || null,
+      contact_email: d.contact_email || null })
     setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
@@ -30,9 +33,35 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
             <input type="number" min="1" max="11" value={d.days}
               onChange={(e) => setD({ ...d, days: e.target.value })} /></label>
         </div>
+        <label className="fld"><span>Description — shown under the festival name</span>
+          <textarea rows={2} value={d.description || ''}
+            onChange={(e) => setD({ ...d, description: e.target.value })} /></label>
         <label className="fld"><span>Fundraising goal (CAD)</span>
           <input type="number" value={d.goal} onChange={(e) => setD({ ...d, goal: e.target.value })} /></label>
         <button className="btn btn-go" onClick={save}>{saved ? 'Saved' : 'Save settings'}</button>
+      </div>
+
+      <div className="card">
+        <h3 style={{ fontSize: 14, marginBottom: 8 }}>Sponsorship payment details</h3>
+        <div className="item-m" style={{ marginBottom: 10 }}>
+          Shown to donors on the sponsorship page when they choose Interac. Kept here rather
+          than in the code because the app&apos;s source is public — change the answer here and
+          it takes effect straight away, with no redeploy.
+        </div>
+        <label className="fld"><span>Interac e-Transfer email</span>
+          <input type="email" inputMode="email" placeholder="mtlganeshutsav@gmail.com"
+            value={d.interac_email || ''}
+            onChange={(e) => setD({ ...d, interac_email: e.target.value })} /></label>
+        <label className="fld"><span>Security answer</span>
+          <input placeholder="Set by the committee" value={d.interac_answer || ''}
+            onChange={(e) => setD({ ...d, interac_answer: e.target.value })} /></label>
+        <div className="item-m">
+          Leave the email blank and the page simply tells donors a committee member will be
+          in touch — no payment details are shown at all.
+        </div>
+        <button className="btn btn-go" style={{ marginTop: 10 }} onClick={save}>
+          {saved ? 'Saved' : 'Save settings'}
+        </button>
       </div>
 
       <div className="card">
