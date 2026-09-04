@@ -22,10 +22,22 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
   const edit = (patch) => { dirty.current = true; setD((p) => ({ ...p, ...patch })) }
 
   const save = async () => {
-    await saveConfig({ name: d.name, start_date: d.start_date, days: Number(d.days), goal: Number(d.goal),
+    // Send only what this member actually changed, so saving one field cannot
+    // roll back somebody else's edit to another.
+    const next = {
+      name: d.name, start_date: d.start_date,
+      days: Number(d.days), goal: Number(d.goal),
       description: d.description || null,
-      interac_email: d.interac_email || null, interac_answer: d.interac_answer || null,
-      contact_email: d.contact_email || null })
+      interac_email: d.interac_email || null,
+      interac_answer: d.interac_answer || null,
+      contact_email: d.contact_email || null,
+    }
+    const patch = {}
+    for (const [k, v] of Object.entries(next)) {
+      const was = k === 'days' || k === 'goal' ? Number(cfg[k]) : (cfg[k] ?? null)
+      if (v !== was) patch[k] = v
+    }
+    await saveConfig(patch)
     dirty.current = false
     setSaved(true); setTimeout(() => setSaved(false), 2000)
   }

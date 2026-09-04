@@ -80,10 +80,21 @@ export async function getEventNotes() {
 
 /* --------------------------------------------------------------- writing -- */
 
-export async function saveConfig(cfg) {
-  if (!isConfigured) { const d = readDemo(); d.cfg = cfg; writeDemo(d); return }
+/**
+ * Patch, not replace. `patch` carries only the fields the user actually changed.
+ *
+ * This used to upsert the whole row, so a member whose form held stale values
+ * overwrote everyone else's edits on save — it reset the festival length and
+ * goal twice on 2026-09-03. Writing only what changed means a stale client can
+ * at worst get its own field wrong, never somebody else's.
+ */
+export async function saveConfig(patch) {
+  if (!Object.keys(patch).length) return
+  if (!isConfigured) {
+    const d = readDemo(); d.cfg = { ...d.cfg, ...patch }; writeDemo(d); return
+  }
   const { error } = await supabase.from('festival_config')
-    .upsert({ id: 1, ...cfg, updated_at: new Date().toISOString() })
+    .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1)
   if (error) throw error
 }
 
