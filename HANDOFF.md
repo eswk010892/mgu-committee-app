@@ -76,6 +76,9 @@ URL correctly. Full demo-mode walkthrough in the archive.
 - **The public page is two tabs, Schedule and Donate.** Schedule reuses `Garland`, the
   committee's day selector, so a visitor picks a day instead of scrolling past all of
   them. Donate embeds the real sponsorship page plus the donor feed.
+- **`.mgu-shell` widens at 1024px and 1440px.** The public link gets opened on laptops;
+  a fixed 780px column left most of the screen empty. From 1024px the programme is a
+  two-column board and the sponsor page sits beside the donor feed.
 - **The Sponsors tab has a Manage / Donor view toggle.** Donor view renders
   `SponsorPublic` with `embedded`, which drops the back bar and hero lede and boxes it as
   a card. It is live, not a mockup — submitting from there creates a real request, which
