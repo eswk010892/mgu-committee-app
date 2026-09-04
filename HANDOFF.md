@@ -25,7 +25,7 @@ sitting in git history.
 | --- | --- |
 | `supabase/sponsorships.sql` | Schema, RLS, three security-definer functions. **Run 2026-09-03.** |
 | `src/components/Sponsors.jsx` | Committee: catalogue, request queue, confirm/decline, CSV |
-| `src/components/SponsorPublic.jsx` | Donor page at `#sponsor`, no sign-in |
+| `src/components/SponsorPublic.jsx` | Donor page — full screen at `#sponsor`, and embedded in the Sponsors tab via `embedded` |
 | `src/components/Crest.jsx` + `src/assets/mgu-crest.webp` | The committee crest |
 
 Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`,
@@ -79,6 +79,10 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
   account's protection is the inbox receiving the deposit link.
 - **`sponsorship_items.status` has three values.** Dropping `pending` back to a
   boolean reintroduces the double-booking hole.
+- **The Sponsors tab has a Manage / Donor view toggle.** Donor view renders
+  `SponsorPublic` with `embedded`, which drops the back bar and hero lede and boxes it as
+  a card. It is live, not a mockup — submitting from there creates a real request, which
+  is deliberate so a volunteer can take a sponsorship over the phone.
 - **`.sp-page` scopes the light palette on purpose** — the donor page is a trial while
   the rest stays dark. If adopted, those tokens move to `:root`.
 - **The reduced-motion block must stay last in `styles.css`.** Rules after it silently
