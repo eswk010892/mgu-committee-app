@@ -154,6 +154,19 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
 .mgu-desc{color:var(--muted);font-size:13px;line-height:1.55;margin-top:10px;max-width:60ch;}
 @media (max-width:380px){.mgu-id{gap:11px;}}
 
+/* Public page section tabs. Deliberately larger and higher-contrast than the
+   committee's .seg buttons — for a first-time visitor these are the primary
+   navigation, not a filter. */
+.pubtabs{display:flex;gap:8px;margin:14px 0 4px;}
+.pubtab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:Inter,sans-serif;font-size:15px;font-weight:700;letter-spacing:-.01em;
+  padding:14px 12px;border-radius:13px;cursor:pointer;
+  background:#332941;border:1.5px solid #6B5C80;color:var(--paper);
+  transition:background .16s ease,border-color .16s ease,color .16s ease;}
+.pubtab:hover{border-color:var(--marigold);}
+.pubtab[data-on="1"]{background:var(--marigold);border-color:var(--marigold);color:#2B1B00;}
+@media (max-width:360px){.pubtab{font-size:14px;padding:13px 8px;gap:6px;}}
+
 .sponsor-cta{display:flex;align-items:center;gap:12px;margin-top:10px;}
 .sponsor-cta .btn{flex:0 0 auto;}
 

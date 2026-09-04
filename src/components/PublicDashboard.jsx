@@ -53,24 +53,19 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
 
       <div className="live"><Radio size={13} /> Live — this page updates by itself</div>
 
-      <div className="seg" style={{ marginTop: 12 }}>
-        <button className="btn" onClick={() => setTab('schedule')}
-          style={tab === 'schedule' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
-          <Calendar size={14} /> Schedule
+      <nav className="pubtabs" aria-label="Sections">
+        <button className="pubtab" data-on={tab === 'schedule' ? '1' : '0'}
+          onClick={() => setTab('schedule')}>
+          <Calendar size={19} strokeWidth={2.2} /> Schedule
         </button>
-        <button className="btn" onClick={() => setTab('donate')}
-          style={tab === 'donate' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
-          <HandHeart size={14} /> Donate
+        <button className="pubtab" data-on={tab === 'donate' ? '1' : '0'}
+          onClick={() => setTab('donate')}>
+          <HandHeart size={19} strokeWidth={2.2} /> Donate
         </button>
-      </div>
+      </nav>
 
       {tab === 'schedule' ? (
         <>
-          <div className="stat-grid stat-grid-2">
-            <div className="stat"><div className="stat-k">Days</div><div className="stat-v num">{nDays}</div></div>
-            <div className="stat"><div className="stat-k">Events</div><div className="stat-v num">{events.length}</div></div>
-          </div>
-
           <Garland cfg={cfg} day={day} setDay={setDay} events={events} />
 
           <div className="card">
