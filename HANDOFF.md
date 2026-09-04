@@ -65,11 +65,14 @@ URL correctly. Full demo-mode walkthrough in the archive.
   account's protection is the inbox receiving the deposit link.
 - **`sponsorship_items.status` has three values.** Dropping `pending` back to a
   boolean reintroduces the double-booking hole.
-- **`Setup.jsx` re-syncs its form from `cfg` while untouched, via a `dirty` ref.**
-  Do not simplify it back to `useState(cfg)`. That snapshots the config once on mount and
-  every Save writes the snapshot over all fields, so a member with Setup open while
-  somebody else edits silently reverts them. It reset the festival length and goal on
-  2026-09-03 with 11 members testing.
+- **Config saves are a diff, and `saveConfig` is an UPDATE not an upsert.** Setup sends
+  only the fields that changed. Do not "simplify" either back: the whole-row upsert plus
+  `useState(cfg)` meant any member with a stale form rolled back everyone else's edits —
+  it reset the festival length and goal twice on 2026-09-03. The form also re-syncs from
+  `cfg` while untouched, via a `dirty` ref.
+- **Phone is required by `submit_sponsorship()`, not by the column.** The column stays
+  nullable because a request confirmed before 2026-09-03 has none, and that is a real
+  record — not something to backfill with a fake number.
 - **The public page is two tabs, Schedule and Donate.** Schedule reuses `Garland`, the
   committee's day selector, so a visitor picks a day instead of scrolling past all of
   them. Donate embeds the real sponsorship page plus the donor feed.
