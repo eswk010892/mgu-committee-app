@@ -11,10 +11,14 @@ export const DEFAULT_CFG = {
   description: '',
 }
 
-/** Used when festival_config.description is empty. */
+/**
+ * Used when festival_config.description is empty. Deliberately states no day
+ * count — the header already prints one from festival_config, and a hard-coded
+ * number here contradicted it the moment the festival went from 5 days to 6.
+ */
 export const DEFAULT_DESCRIPTION =
-  'Five days of aarti, prasad and celebration in Montreal, organised by the ' +
-  'Montreal Ganesh Utsav Committee.'
+  'Aarti, prasad and celebration in Montreal, organised by the ' +
+  'Montreal Ganesh Utsav Committee. Everyone is welcome.'
 
 export const DEVA = ['प्रथम','द्वितीय','तृतीय','चतुर्थ','पंचम','षष्ठ','सप्तम','अष्टम','नवम','दशम','एकादश']
 
