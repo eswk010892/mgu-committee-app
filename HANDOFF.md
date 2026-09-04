@@ -1,6 +1,6 @@
 # Handoff — Committee Board
 
-**Last session:** 2026-09-03 · sponsorships built, Overview reworked, **schema live**
+**Last session:** 2026-09-03 · sponsorships **shipped and live in production**
 
 > This repository is **public**. Credentials, the Supabase project ref, invite codes
 > and payment details are deliberately kept out of it — they live in the database or
@@ -11,10 +11,15 @@
 Vite + React 18 + Supabase. Six tabs: Overview, Schedule, Tasks, **Sponsors**, Team,
 Setup. Bundle **120.6 KB gzipped** plus a 12.9 KB crest asset.
 
-**The schema is LIVE.** `supabase/sponsorships.sql` was run against the database on
-2026-09-03 and verified (see below). The **front-end code is still uncommitted** in the
-tree, so the deployed site does not show the Sponsors tab yet — that needs a commit and
-push.
+**Shipped 2026-09-03.** Schema run and verified, code merged to `main`, deployed to
+Vercel, and confirmed working on the live site. Donors can sponsor at
+`/#sponsor` right now.
+
+Interac details are set in `festival_config` (`mtlganeshutsav@gmail.com`) and confirmed
+rendering on the live donor form. **The security answer is the one that was already
+published in Vamsi's `feature/sponsors-page` branch** — Eswar chose to keep it. It is now
+rotatable from Setup with no redeploy, and deleting that branch would remove the copy
+sitting in git history.
 
 | File | What it is |
 | --- | --- |
@@ -95,16 +100,16 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
 
 ## Next steps
 
-1. **Commit and push the feature work** — only `HANDOFF.md` is committed so far, so the
-   live site still has no Sponsors tab even though the database is ready.
-2. Set the Interac email and answer in **Setup → Sponsorship payment details**.
-   Change the answer if the one from the prototype is real — it has been sitting in a
-   public repo. Currently `interac_email` is null, so the donor page shows no payment
-   details at all.
-3. **Check `festival_config`:** it currently reads `days = 6` and `goal = 0`. Earlier
-   notes said 5 days (Sep 14–18) and a $25,000 goal. Left alone deliberately — these are
-   committee decisions — but one of the two records is stale.
-4. Add the real sponsorship items with the committee.
+1. **Add the real sponsorship items** — the catalogue is empty, so every day currently
+   shows "Nothing listed here yet". Sponsors tab → Add.
+2. **Check `festival_config`:** it reads `days = 6` and `goal = 0`. Earlier notes said
+   5 days (Sep 14–18) and a $25,000 goal. Left alone deliberately — committee decisions —
+   but one of the two records is stale. Note the day count is now printed on the public
+   page, so a wrong value is visible to everyone.
+3. **Delete `feature/sponsors-page`** on GitHub. It is not merged and it carries the
+   Interac answer and an admin password in a public repo's history.
+4. Nobody has joined the committee yet, so the board itself is unreachable — Eswar needs
+   to join via `/#join` before the Sponsors tab can be used at all.
 5. Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`, then give the
    Tasks "Due" date its own wide column (see archive).
 6. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
