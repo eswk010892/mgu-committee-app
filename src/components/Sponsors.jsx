@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { Plus, Trash2, Check, Undo2, Download, ExternalLink, Mail, Phone } from 'lucide-react'
+import { Plus, Trash2, Check, Undo2, Download, ExternalLink, Mail, Phone,
+         ClipboardList, Eye } from 'lucide-react'
 
 import { dayDate, fmtDay, money, timeAgo, toCSV, download, todayLocal } from '../lib/format.js'
 import { SPONSOR_CATS } from '../lib/constants.js'
+import SponsorPublic from './SponsorPublic.jsx'
 
 /**
  * Committee side of sponsorships: keep the catalogue, work the request queue.
@@ -13,8 +15,10 @@ import { SPONSOR_CATS } from '../lib/constants.js'
  */
 export default function Sponsors({ cfg, items, requests, day,
                                    addItem, updateItem, removeItem,
-                                   confirmRequest, declineRequest, onPreviewPublic }) {
+                                   confirmRequest, declineRequest,
+                                   submitSponsorship, onOpenPublic }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
+  const [view, setView] = useState('manage')      // manage | donor
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState('pending')
   const [busy, setBusy] = useState(null)
@@ -63,11 +67,27 @@ export default function Sponsors({ cfg, items, requests, day,
     <>
       <div className="row" style={{ marginBottom: 10 }}>
         <h2 style={{ fontSize: 18 }}>Sponsorships</h2>
-        <button className="btn" onClick={onPreviewPublic}>
-          <ExternalLink size={14} /> Donor page
+        <button className="btn" onClick={onOpenPublic} title="Open full screen, as a donor sees it">
+          <ExternalLink size={14} /> Open
         </button>
       </div>
 
+      {/* Manage the list, or look at exactly what a donor sees — without leaving the tab. */}
+      <div className="seg">
+        <button className="btn" onClick={() => setView('manage')}
+          style={view === 'manage' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
+          <ClipboardList size={14} /> Manage
+        </button>
+        <button className="btn" onClick={() => setView('donor')}
+          style={view === 'donor' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
+          <Eye size={14} /> Donor view
+        </button>
+      </div>
+
+      {view === 'donor' ? (
+        <SponsorPublic embedded cfg={cfg} items={items} submit={submitSponsorship} />
+      ) : (
+      <>
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)' }}>
         <div className="stat">
           <div className="stat-k">Confirmed</div>
@@ -232,6 +252,8 @@ export default function Sponsors({ cfg, items, requests, day,
           </div>
         ))}
       </div>
+      </>
+      )}
     </>
   )
 }

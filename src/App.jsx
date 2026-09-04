@@ -180,7 +180,9 @@ export default function App() {
             addItem={wrap(api.addSponsorItem)} updateItem={wrap(api.updateSponsorItem)}
             removeItem={wrap(api.removeSponsorItem)}
             confirmRequest={wrap(api.confirmSponsorship)} declineRequest={wrap(api.declineSponsorship)}
-            onPreviewPublic={() => setScreen('sponsor')} />)}
+            submitSponsorship={async (form) => {
+              const r = await api.submitSponsorship(form); await pull(); return r }}
+            onOpenPublic={() => setScreen('sponsor')} />)}
         {tab === 'team' && <Team people={people} tasks={tasks} me={auth.profile?.name} />}
         {tab === 'setup' && (
           <Setup cfg={cfg} saveConfig={wrap(api.saveConfig)} auth={auth} demo={auth.demo}

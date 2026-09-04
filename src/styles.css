@@ -167,6 +167,15 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
    cannot reach the dark committee board — if the committee likes it, these
    tokens move up to :root and the rest of the app follows.
    ══════════════════════════════════════════════════════════════════════════ */
+/* Embedded in the committee's Sponsors tab: a card, not a whole screen. */
+.sp-page.sp-embed{min-height:0;border-radius:16px;overflow:hidden;
+  border:1px solid var(--edge);padding-bottom:6px;}
+.sp-embed .sp-hero{padding:20px 18px 26px;}
+.sp-embed .sp-title{font-size:26px;}
+.sp-embed .sp-lede{display:none;}
+.sp-embed .sp-items{padding:14px;}
+.sp-embed .sp-foot{padding-bottom:14px;font-style:italic;}
+
 .sp-page{
   --sp-paper:#FBF7F1; --sp-card:#FFFFFF; --sp-ink:#1C1930; --sp-muted:#5F5872;
   --sp-line:#E4DCD0; --sp-indigo:#282560; --sp-flame:#B04E14; --sp-gold:#8A6100;

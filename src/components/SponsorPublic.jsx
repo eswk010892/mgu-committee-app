@@ -26,7 +26,7 @@ const REASONS = {
  * Styling is scoped under `.sp-page` so this light treatment cannot leak into
  * the dark committee board while the committee decides whether they like it.
  */
-export default function SponsorPublic({ cfg, items, submit, onBack }) {
+export default function SponsorPublic({ cfg, items, submit, onBack, embedded = false }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
   const [day, setDay] = useState(0)
   const [open, setOpen] = useState(null)      // item object, or GENERAL, or null
@@ -78,14 +78,16 @@ export default function SponsorPublic({ cfg, items, submit, onBack }) {
   }
 
   return (
-    <div className="sp-page">
-      <header className="sp-top">
-        <button className="sp-back" onClick={onBack}><ArrowLeft size={15} /> Back</button>
-        <div className="sp-brand"><Crest size={30} /> Montreal Ganesh Utsav</div>
-      </header>
+    <div className={'sp-page' + (embedded ? ' sp-embed' : '')}>
+      {!embedded && (
+        <header className="sp-top">
+          <button className="sp-back" onClick={onBack}><ArrowLeft size={15} /> Back</button>
+          <div className="sp-brand"><Crest size={30} /> Montreal Ganesh Utsav</div>
+        </header>
+      )}
 
       <section className="sp-hero">
-        <Crest size={104} className="sp-hero-crest" />
+        <Crest size={embedded ? 68 : 104} className="sp-hero-crest" />
         <p className="sp-eyebrow">Sponsorships · {cfg.name}</p>
         <h1 className="sp-title">Support <em>Ganesh Utsav</em></h1>
         <p className="sp-dates">
@@ -153,7 +155,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack }) {
       </section>
 
       <p className="sp-foot">
-        Questions? Speak to any committee member. Amounts shown are in Canadian dollars.
+        {embedded
+          ? 'This is exactly what a donor sees at the #sponsor link.'
+          : 'Questions? Speak to any committee member. Amounts shown are in Canadian dollars.'}
       </p>
 
       {open && (
