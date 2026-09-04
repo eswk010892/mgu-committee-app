@@ -1,24 +1,35 @@
-import React, { useMemo } from 'react'
-import { Coins, Package, Radio, HandHeart } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { Coins, Package, Radio, Calendar, HandHeart } from 'lucide-react'
 import { dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
 import { DEVA, DEFAULT_DESCRIPTION } from '../lib/constants.js'
 import GaneshMark from './GaneshMark.jsx'
 import Crest from './Crest.jsx'
+import Garland from './Garland.jsx'
+import SponsorPublic from './SponsorPublic.jsx'
 
 /**
  * What anyone with the link sees. Read only, live.
  * Receives only data the database allows the public to read.
+ *
+ * Two tabs rather than one long scroll: the programme reuses the committee's
+ * day selector so a visitor picks a day instead of scrolling past all of them,
+ * and Donate carries the real sponsorship page rather than a link to it.
  */
-export default function PublicDashboard({ cfg, events, donations, sponsorItems = [], onSponsor, onLogin }) {
+export default function PublicDashboard({ cfg, events, donations, sponsorItems = [],
+                                          submitSponsorship, onLogin }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
+  const [tab, setTab] = useState('schedule')      // schedule | donate
+  const [day, setDay] = useState(0)
 
   const cash = useMemo(
     () => donations.filter((d) => d.kind === 'money').reduce((s, d) => s + Number(d.amount || 0), 0),
     [donations])
   const goods = donations.filter((d) => d.kind === 'goods').length
-  const donors = new Set(donations.map((d) => d.donor)).size
 
   const daysLeft = Math.ceil((new Date(cfg.start_date + 'T12:00:00') - new Date()) / 86400000)
+
+  const dayEvents = events.filter((e) => e.day === day)
+    .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
 
   return (
     <div className="mgu-shell" style={{ paddingBottom: 40 }}>
@@ -42,44 +53,36 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
 
       <div className="live"><Radio size={13} /> Live — this page updates by itself</div>
 
-      {onSponsor && (
-        <div className="card sponsor-cta">
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="item-t">Sponsor a part of the festival</div>
-            <div className="item-m">
-              {sponsorItems.some((i) => i.status !== 'taken')
-                ? `${sponsorItems.filter((i) => i.status !== 'taken').length} still available — an aarti, a meal, the decorations.`
-                : 'Give any amount toward this year’s celebration.'}
-            </div>
-          </div>
-          <button className="btn btn-go" onClick={onSponsor}>
-            <HandHeart size={14} /> Sponsor
-          </button>
-        </div>
-      )}
-
-      <div className="stat-grid">
-        <div className="stat"><div className="stat-k">Days</div><div className="stat-v num">{nDays}</div></div>
-        <div className="stat"><div className="stat-k">Events</div><div className="stat-v num">{events.length}</div></div>
-        <div className="stat"><div className="stat-k">Contributions</div><div className="stat-v num">{donations.length}</div></div>
-        <div className="stat"><div className="stat-k">Donors</div><div className="stat-v num">{donors}</div></div>
+      <div className="seg" style={{ marginTop: 12 }}>
+        <button className="btn" onClick={() => setTab('schedule')}
+          style={tab === 'schedule' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
+          <Calendar size={14} /> Schedule
+        </button>
+        <button className="btn" onClick={() => setTab('donate')}
+          style={tab === 'donate' ? { borderColor: 'var(--marigold)', color: 'var(--marigold)' } : null}>
+          <HandHeart size={14} /> Donate
+        </button>
       </div>
 
-      <h2 style={{ fontSize: 18, margin: '22px 0 10px' }}>Programme</h2>
-      {Array.from({ length: nDays }, (_, i) => {
-        const list = events.filter((e) => e.day === i)
-          .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
-        return (
-          <div className="card" key={i}>
-            <div className="row" style={{ marginBottom: list.length ? 6 : 0 }}>
+      {tab === 'schedule' ? (
+        <>
+          <div className="stat-grid stat-grid-2">
+            <div className="stat"><div className="stat-k">Days</div><div className="stat-v num">{nDays}</div></div>
+            <div className="stat"><div className="stat-k">Events</div><div className="stat-v num">{events.length}</div></div>
+          </div>
+
+          <Garland cfg={cfg} day={day} setDay={setDay} events={events} />
+
+          <div className="card">
+            <div className="row" style={{ marginBottom: dayEvents.length ? 6 : 0 }}>
               <h3 style={{ fontSize: 15 }}>
-                Day {i + 1} <span className="deva" style={{ color: 'var(--marigold)' }}>{DEVA[i] || ''}</span>
+                Day {day + 1} <span className="deva" style={{ color: 'var(--marigold)' }}>{DEVA[day] || ''}</span>
               </h3>
-              <span className="item-m" style={{ margin: 0 }}>{fmtDay(dayDate(cfg, i))}</span>
+              <span className="item-m" style={{ margin: 0 }}>{fmtDay(dayDate(cfg, day))}</span>
             </div>
-            {list.length === 0
-              ? <div className="item-m">Programme to be announced.</div>
-              : list.map((e) => (
+            {dayEvents.length === 0
+              ? <div className="empty">Programme for this day to be announced.</div>
+              : dayEvents.map((e) => (
                 <div className="item" key={e.id}>
                   <div className="row">
                     <div style={{ flex: 1 }}>
@@ -93,41 +96,45 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
                 </div>
               ))}
           </div>
-        )
-      })}
+        </>
+      ) : (
+        <>
+          <SponsorPublic embedded cfg={cfg} items={sponsorItems} submit={submitSponsorship} />
 
-      <h2 style={{ fontSize: 18, margin: '22px 0 4px' }}>Our donors</h2>
-      <div className="item-m" style={{ marginBottom: 10 }}>
-        Thank you to everyone supporting this year&apos;s Ganeshotsav.
-      </div>
+          <h2 style={{ fontSize: 18, margin: '22px 0 4px' }}>Our donors</h2>
+          <div className="item-m" style={{ marginBottom: 10 }}>
+            Thank you to everyone supporting this year&apos;s Ganeshotsav.
+          </div>
 
-      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)' }}>
-        <div className="stat"><div className="stat-k">Received</div><div className="stat-v num">{money(cash)}</div></div>
-        <div className="stat"><div className="stat-k">Food &amp; goods</div><div className="stat-v num">{goods}</div></div>
-      </div>
+          <div className="stat-grid stat-grid-2">
+            <div className="stat"><div className="stat-k">Received</div><div className="stat-v num">{money(cash)}</div></div>
+            <div className="stat"><div className="stat-k">Food &amp; goods</div><div className="stat-v num">{goods}</div></div>
+          </div>
 
-      <div className="card" style={{ marginTop: 10 }}>
-        {donations.length === 0 ? (
-          <div className="empty">No contributions recorded yet.</div>
-        ) : donations.map((d) => (
-          <div className="item" key={d.id}>
-            <div className="row">
-              <div style={{ flex: 1 }}>
-                <div className="item-t">{d.donor}</div>
-                <div className="item-m" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {d.kind === 'money' ? <Coins size={12} /> : <Package size={12} />}
-                  <span className="chip chip-on">{d.category}</span>
-                  {d.kind === 'goods' && d.item ? <span>{d.item}{d.qty ? ` · ${d.qty}` : ''}</span> : null}
-                  {d.created_at ? <span>· {timeAgo(d.created_at)}</span> : null}
+          <div className="card" style={{ marginTop: 10 }}>
+            {donations.length === 0 ? (
+              <div className="empty">No contributions recorded yet.</div>
+            ) : donations.map((d) => (
+              <div className="item" key={d.id}>
+                <div className="row">
+                  <div style={{ flex: 1 }}>
+                    <div className="item-t">{d.donor}</div>
+                    <div className="item-m" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {d.kind === 'money' ? <Coins size={12} /> : <Package size={12} />}
+                      <span className="chip chip-on">{d.category}</span>
+                      {d.kind === 'goods' && d.item ? <span>{d.item}{d.qty ? ` · ${d.qty}` : ''}</span> : null}
+                      {d.created_at ? <span>· {timeAgo(d.created_at)}</span> : null}
+                    </div>
+                  </div>
+                  {d.kind === 'money' && (
+                    <span className="num" style={{ fontSize: 15, color: 'var(--marigold)' }}>{money(d.amount)}</span>
+                  )}
                 </div>
               </div>
-              {d.kind === 'money' && (
-                <span className="num" style={{ fontSize: 15, color: 'var(--marigold)' }}>{money(d.amount)}</span>
-              )}
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <div style={{ textAlign: 'center', margin: '26px 0 10px' }}>
         <button className="btn" onClick={onLogin}>Committee login</button>

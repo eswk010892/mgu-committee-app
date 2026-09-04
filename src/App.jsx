@@ -129,7 +129,8 @@ export default function App() {
         )}
         <PublicDashboard cfg={cfg} events={events} donations={donations}
           sponsorItems={sponsorItems}
-          onSponsor={() => setScreen('sponsor')}
+          submitSponsorship={async (form) => {
+            const r = await api.submitSponsorship(form); await pull(); return r }}
           onLogin={() => setScreen('login')} />
       </>
     )
