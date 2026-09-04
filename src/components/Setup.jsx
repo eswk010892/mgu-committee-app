@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Eye, LogOut } from 'lucide-react'
 import { download, toCSV, todayLocal } from '../lib/format.js'
 
@@ -6,11 +6,27 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
   const [d, setD] = useState(cfg)
   const [saved, setSaved] = useState(false)
 
+  /**
+   * Keep the form in step with the stored config.
+   *
+   * Without this the form snapshots `cfg` once on mount and every Save writes
+   * that snapshot back over all fields — so a member who left Setup open while
+   * somebody else changed the dates would silently revert them on their next
+   * save. Observed 2026-09-03: the festival length and goal were reset this way.
+   *
+   * Only re-syncs while the form is untouched, so a live update cannot wipe
+   * what someone is halfway through typing.
+   */
+  const dirty = useRef(false)
+  useEffect(() => { if (!dirty.current) setD(cfg) }, [cfg])
+  const edit = (patch) => { dirty.current = true; setD((p) => ({ ...p, ...patch })) }
+
   const save = async () => {
     await saveConfig({ name: d.name, start_date: d.start_date, days: Number(d.days), goal: Number(d.goal),
       description: d.description || null,
       interac_email: d.interac_email || null, interac_answer: d.interac_answer || null,
       contact_email: d.contact_email || null })
+    dirty.current = false
     setSaved(true); setTimeout(() => setSaved(false), 2000)
   }
 
@@ -24,20 +40,20 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
 
       <div className="card">
         <label className="fld"><span>Festival name</span>
-          <input value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></label>
+          <input value={d.name} onChange={(e) => edit({ name: e.target.value })} /></label>
         <div className="two">
           <label className="fld"><span>First day (sthapana)</span>
             <input type="date" value={d.start_date}
-              onChange={(e) => setD({ ...d, start_date: e.target.value })} /></label>
+              onChange={(e) => edit({ start_date: e.target.value })} /></label>
           <label className="fld"><span>Number of days</span>
             <input type="number" min="1" max="11" value={d.days}
-              onChange={(e) => setD({ ...d, days: e.target.value })} /></label>
+              onChange={(e) => edit({ days: e.target.value })} /></label>
         </div>
         <label className="fld"><span>Description — shown under the festival name</span>
           <textarea rows={2} value={d.description || ''}
-            onChange={(e) => setD({ ...d, description: e.target.value })} /></label>
+            onChange={(e) => edit({ description: e.target.value })} /></label>
         <label className="fld"><span>Fundraising goal (CAD)</span>
-          <input type="number" value={d.goal} onChange={(e) => setD({ ...d, goal: e.target.value })} /></label>
+          <input type="number" value={d.goal} onChange={(e) => edit({ goal: e.target.value })} /></label>
         <button className="btn btn-go" onClick={save}>{saved ? 'Saved' : 'Save settings'}</button>
       </div>
 
@@ -51,10 +67,10 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
         <label className="fld"><span>Interac e-Transfer email</span>
           <input type="email" inputMode="email" placeholder="mtlganeshutsav@gmail.com"
             value={d.interac_email || ''}
-            onChange={(e) => setD({ ...d, interac_email: e.target.value })} /></label>
+            onChange={(e) => edit({ interac_email: e.target.value })} /></label>
         <label className="fld"><span>Security answer</span>
           <input placeholder="Set by the committee" value={d.interac_answer || ''}
-            onChange={(e) => setD({ ...d, interac_answer: e.target.value })} /></label>
+            onChange={(e) => edit({ interac_answer: e.target.value })} /></label>
         <div className="item-m">
           Leave the email blank and the page simply tells donors a committee member will be
           in touch — no payment details are shown at all.

@@ -17,8 +17,9 @@ export const DEFAULT_CFG = {
  * number here contradicted it the moment the festival went from 5 days to 6.
  */
 export const DEFAULT_DESCRIPTION =
-  'Aarti, prasad and celebration in Montreal, organised by the ' +
-  'Montreal Ganesh Utsav Committee. Everyone is welcome.'
+  'Every September, Bappa comes home to Montreal — aarti and dhol in the evening, ' +
+  'prasad after, and a hall full of familiar faces. Come for one evening or all of ' +
+  'them. Bring the family; everyone is welcome.'
 
 export const DEVA = ['प्रथम','द्वितीय','तृतीय','चतुर्थ','पंचम','षष्ठ','सप्तम','अष्टम','नवम','दशम','एकादश']
 
