@@ -1,6 +1,6 @@
 # Handoff — Committee Board
 
-**Last session:** 2026-09-03 · sponsorships built; Overview reworked
+**Last session:** 2026-09-03 · sponsorships built, Overview reworked, **schema live**
 
 > This repository is **public**. Credentials, the Supabase project ref, invite codes
 > and payment details are deliberately kept out of it — they live in the database or
@@ -11,13 +11,14 @@
 Vite + React 18 + Supabase. Six tabs: Overview, Schedule, Tasks, **Sponsors**, Team,
 Setup. Bundle **120.6 KB gzipped** plus a 12.9 KB crest asset.
 
-**Sponsorships are built and verified, but not deployed.** All of it is uncommitted
-work in the tree, and `supabase/sponsorships.sql` has **not been run** yet — nothing
-sponsorship-related exists in the database until it is.
+**The schema is LIVE.** `supabase/sponsorships.sql` was run against the database on
+2026-09-03 and verified (see below). The **front-end code is still uncommitted** in the
+tree, so the deployed site does not show the Sponsors tab yet — that needs a commit and
+push.
 
 | File | What it is |
 | --- | --- |
-| `supabase/sponsorships.sql` | Schema, RLS, three security-definer functions. **Not yet run.** |
+| `supabase/sponsorships.sql` | Schema, RLS, three security-definer functions. **Run 2026-09-03.** |
 | `src/components/Sponsors.jsx` | Committee: catalogue, request queue, confirm/decline, CSV |
 | `src/components/SponsorPublic.jsx` | Donor page at `#sponsor`, no sign-in |
 | `src/components/Crest.jsx` + `src/assets/mgu-crest.webp` | The committee crest |
@@ -36,6 +37,24 @@ Modified: `App.jsx`, `PublicDashboard.jsx`, `Overview.jsx`, `Garland.jsx`,
   insert. Validates name/email/amount server-side, refuses a claimed item.
 - **`confirm_sponsorship()` / `decline_sponsorship()`** — committee only. Confirming
   writes a real `donations` row (+ `donation_private`); declining reverses it.
+
+### Verified against the live database (2026-09-03)
+
+Ran, then probed with the **anonymous** key over REST, with real rows present:
+
+- 2 tables, 4 new `festival_config` columns, RLS on both, 4 policies, 3 security-definer
+  functions, the double-booking unique index, realtime publishing `sponsorship_items` only,
+  and `submit_sponsorship` executable by `anon, authenticated` — all confirmed by query.
+- anon **can** read `sponsorship_items`; anon **cannot** read `sponsorship_requests` —
+  it returned `[]` while a real request with name, email and phone existed. **This closes
+  the long-standing gap where the RLS probe had only ever run against empty tables.**
+- anon direct `INSERT` into `sponsorship_requests` → HTTP 401, RLS violation.
+- anon `confirm_sponsorship` → `not-allowed`.
+- Double-booking through the gate → `item-taken`.
+- Validation through the gate → `bad-amount` (0 and negative), `bad-email`, `no-name`.
+- `donation_private`, `committee_members`, `invite_codes` all return `[]` to anon.
+
+Probe rows were removed afterwards; all sponsorship tables and `donations` are back to 0.
 
 ### Verified working (measured, in demo mode)
 
@@ -76,14 +95,15 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
 
 ## Next steps
 
-1. Run `supabase/sponsorships.sql` in the Supabase SQL editor. **Confirm the project
-   ref first** — an unrelated project has a same-named `events` table, and because the
-   script uses `create table if not exists`, running it there would skip creation and
-   apply a public-read policy to that table instead.
+1. **Commit and push the feature work** — only `HANDOFF.md` is committed so far, so the
+   live site still has no Sponsors tab even though the database is ready.
 2. Set the Interac email and answer in **Setup → Sponsorship payment details**.
    Change the answer if the one from the prototype is real — it has been sitting in a
-   public repo.
-3. Commit and push the feature work (only `HANDOFF.md` is committed so far).
+   public repo. Currently `interac_email` is null, so the donor page shows no payment
+   details at all.
+3. **Check `festival_config`:** it currently reads `days = 6` and `goal = 0`. Earlier
+   notes said 5 days (Sep 14–18) and a $25,000 goal. Left alone deliberately — these are
+   committee decisions — but one of the two records is stale.
 4. Add the real sponsorship items with the committee.
 5. Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`, then give the
    Tasks "Due" date its own wide column (see archive).
