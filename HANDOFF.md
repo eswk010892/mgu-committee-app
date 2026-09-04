@@ -102,10 +102,10 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
 
 1. **Add the real sponsorship items** — the catalogue is empty, so every day currently
    shows "Nothing listed here yet". Sponsors tab → Add.
-2. **Check `festival_config`:** it reads `days = 6` and `goal = 0`. Earlier notes said
-   5 days (Sep 14–18) and a $25,000 goal. Left alone deliberately — committee decisions —
-   but one of the two records is stale. Note the day count is now printed on the public
-   page, so a wrong value is visible to everyone.
+2. **`goal` is still 0** (earlier notes said $25,000). Nothing renders it today — the
+   goal meter was removed from the Overview — so it is harmless, but it is wrong if the
+   meter ever comes back. `days` was corrected to **5** on 2026-09-03 (Sep 14–18,
+   visarjan Friday), confirmed live.
 3. ~~Delete `feature/sponsors-page`~~ — **done 2026-09-03.** A copy of the original is
    archived outside the repo at `../reference/vamsi-original/`.
    **Caveat, verified not assumed:** deleting the branch did *not* remove the content.
