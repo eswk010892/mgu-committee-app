@@ -78,15 +78,11 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
             {dayEvents.length === 0
               ? <div className="empty">Programme for this day to be announced.</div>
               : dayEvents.map((e) => (
-                <div className="item" key={e.id}>
-                  <div className="row">
-                    <div style={{ flex: 1 }}>
-                      <div className="item-t">{e.title}</div>
-                      {e.place && <div className="item-m">{e.place}</div>}
-                    </div>
-                    <span className="num" style={{ fontSize: 13, color: 'var(--marigold)' }}>
-                      {e.start_time || '—'}
-                    </span>
+                <div className="pub-ev" key={e.id}>
+                  <span className="pub-ev-time">{e.start_time || '—'}</span>
+                  <div className="pub-ev-body">
+                    <div className="pub-ev-title">{e.title}</div>
+                    {e.place && <div className="pub-ev-place">{e.place}</div>}
                   </div>
                 </div>
               ))}

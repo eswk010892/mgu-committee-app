@@ -75,6 +75,10 @@ create table if not exists sponsorship_requests (
   donor_name   text not null,
   org          text,
   email        text not null,
+  -- Nullable at the column, required by submit_sponsorship(). Rows created
+  -- before the phone became mandatory (2026-09-03) still have NULL here, and
+  -- they are real committee records — not something to backfill with a fake
+  -- number just to satisfy a constraint.
   phone        text,
   amount       numeric not null check (amount > 0),
   pay_method   text not null,
@@ -147,6 +151,7 @@ begin
   if p_email is null or p_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
     return 'bad-email';
   end if;
+  if p_phone is null or length(trim(p_phone)) < 7 then return 'no-phone'; end if;
   if p_pay_method is null or length(trim(p_pay_method)) = 0 then return 'no-pay-method'; end if;
 
   if p_item_id is not null then
@@ -169,7 +174,7 @@ begin
        amount, pay_method, show_name, message)
     values
       (p_item_id, v_label, v_day, v_kind, trim(p_donor_name), nullif(trim(coalesce(p_org,'')),''),
-       lower(trim(p_email)), nullif(trim(coalesce(p_phone,'')),''),
+       lower(trim(p_email)), trim(p_phone),
        v_amount, p_pay_method, coalesce(p_show_name, true),
        nullif(trim(coalesce(p_message,'')),''));
   exception when unique_violation then

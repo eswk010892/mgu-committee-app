@@ -167,6 +167,23 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
 .pubtab[data-on="1"]{background:var(--marigold);border-color:var(--marigold);color:#2B1B00;}
 @media (max-width:360px){.pubtab{font-size:14px;padding:13px 8px;gap:6px;}}
 
+/* Public programme rows. The committee's compact .item is too quiet for a
+   visitor reading at arm's length — the time leads, the title carries weight,
+   and the place is legible rather than a whisper. */
+.pub-ev{display:flex;align-items:flex-start;gap:13px;padding:14px 0;
+  border-bottom:1px solid var(--edge);}
+.pub-ev:last-child{border-bottom:none;}
+.pub-ev:first-child{padding-top:6px;}
+.pub-ev-time{flex:0 0 auto;min-width:62px;font-family:'Space Mono',monospace;
+  font-weight:700;font-size:15px;letter-spacing:-.02em;color:#2B1B00;
+  background:var(--marigold);border-radius:8px;padding:5px 8px;text-align:center;}
+.pub-ev-body{min-width:0;padding-top:2px;}
+.pub-ev-title{font-size:17px;font-weight:700;line-height:1.3;color:var(--paper);
+  letter-spacing:-.01em;}
+.pub-ev-place{font-size:13.5px;line-height:1.45;color:#C4B8D2;margin-top:4px;}
+@media (max-width:360px){.pub-ev{gap:10px;}.pub-ev-title{font-size:16px;}
+  .pub-ev-time{min-width:56px;font-size:14px;}}
+
 .sponsor-cta{display:flex;align-items:center;gap:12px;margin-top:10px;}
 .sponsor-cta .btn{flex:0 0 auto;}
 

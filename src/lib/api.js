@@ -229,6 +229,7 @@ export async function submitSponsorship(f) {
     if (!amount || amount <= 0) return 'bad-amount'
     if (!f.name?.trim()) return 'no-name'
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email || '')) return 'bad-email'
+    if (!f.phone || f.phone.trim().length < 7) return 'no-phone'
     if (!f.payMethod) return 'no-pay-method'
     d.sponsorRequests.unshift({
       id: uid(), item_id: f.itemId || null,
@@ -236,7 +237,7 @@ export async function submitSponsorship(f) {
       item_day: item ? item.day_index : (f.day ?? null),
       kind: item ? 'item' : 'general',
       donor_name: f.name.trim(), org: f.org?.trim() || null,
-      email: f.email.trim().toLowerCase(), phone: f.phone?.trim() || null,
+      email: f.email.trim().toLowerCase(), phone: f.phone.trim(),
       amount, pay_method: f.payMethod, show_name: f.showName !== false,
       message: f.message?.trim() || null, status: 'pending', donation_id: null,
       created_at: new Date().toISOString(),

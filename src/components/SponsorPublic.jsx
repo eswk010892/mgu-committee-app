@@ -14,6 +14,7 @@ const REASONS = {
   'bad-email': 'That email address does not look right.',
   'no-name': 'Please tell us your name.',
   'no-pay-method': 'Please choose how you would like to pay.',
+  'no-phone': 'Please give a phone number — the committee calls to confirm every sponsorship.',
   'no-such-item': 'That item is no longer listed.',
   error: 'Something went wrong. Please try again.',
 }
@@ -221,8 +222,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                   <label className="sp-f"><span>Email <i>*</i></span>
                     <input required type="email" inputMode="email" autoComplete="email"
                       value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-                  <label className="sp-f"><span>Phone (optional)</span>
-                    <input type="tel" inputMode="tel" autoComplete="tel" value={f.phone}
+                  <label className="sp-f"><span>Phone <i>*</i></span>
+                    <input required type="tel" inputMode="tel" autoComplete="tel"
+                      value={f.phone} placeholder="+1 514…"
                       onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
                 </div>
 
