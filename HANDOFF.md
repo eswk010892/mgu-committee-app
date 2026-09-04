@@ -106,10 +106,14 @@ at 375 or 320px · `BASE_PATH=/mgu-committee-app/` rewrites the crest URL correc
    5 days (Sep 14–18) and a $25,000 goal. Left alone deliberately — committee decisions —
    but one of the two records is stale. Note the day count is now printed on the public
    page, so a wrong value is visible to everyone.
-3. **Delete `feature/sponsors-page`** on GitHub. It is not merged and it carries the
-   Interac answer and an admin password in a public repo's history.
-4. Nobody has joined the committee yet, so the board itself is unreachable — Eswar needs
-   to join via `/#join` before the Sponsors tab can be used at all.
+3. ~~Delete `feature/sponsors-page`~~ — **done 2026-09-03.** A copy of the original is
+   archived outside the repo at `../reference/vamsi-original/`.
+   **Caveat, verified not assumed:** deleting the branch did *not* remove the content.
+   Commit `376945e` is still reachable by SHA and its raw file still returns HTTP 200
+   unauthenticated, Interac answer included — GitHub keeps dangling objects. In practice
+   this changes little: the answer is printed on the donor page for every donor by
+   design, and the admin password guarded a page that no longer exists anywhere. Rotating
+   the answer in Setup is the only action that actually changes the exposure.
 5. Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`, then give the
    Tasks "Due" date its own wide column (see archive).
 6. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
