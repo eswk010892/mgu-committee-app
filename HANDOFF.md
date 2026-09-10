@@ -15,8 +15,9 @@ Setup. Bundle **122.7 KB gzipped** plus a 12.9 KB crest asset.
 sponsor at `/#sponsor` today. Festival config is `days = 6` (Sep 14–19), `goal = 25000`.
 
 **Uncommitted on top of that (2026-09-10):** seven changes asked for by the committee,
-built and verified but **not deployed**, and `supabase/updates-2026-09-10.sql` has
-**not been run**.
+built and verified in demo mode but **not deployed**, and
+`supabase/updates-2026-09-10.sql` has **not been run**. The rules those changes settled
+are in Gotchas below; the measured verification is archived.
 
 | # | Change | Where |
 |---|--------|-------|
@@ -28,47 +29,21 @@ built and verified but **not deployed**, and `supabase/updates-2026-09-10.sql` h
 | 6 | No existing data destroyed | migration is additive only |
 | 7 | Admin rights for three named members | `committee_members.is_admin` + `is_admin()` |
 
-### What "admin" means here — deliberately narrow
-
-Admin gates **`festival_config` and nothing else**: the festival name, dates, day count,
-goal and payment details. Every member keeps full rights over the programme, tasks,
-donations and sponsorships, and Setup's backup, public preview and sign-out stay open to
-everyone. With ~10 volunteers running a five-day festival from their phones, gating
-day-to-day work behind three people is a bottleneck, not safety.
-
-Enforced in RLS (`festival_config admin write`), not just in the UI. `Setup.jsx` renders
-its two settings cards as `disabled` fieldsets for a non-admin.
-
-### `is_admin()` has a bootstrap clause, on purpose
-
-While **no** member is flagged admin, every member counts as one — in SQL *and* in
-`App.jsx`, which is why the screen and the database always agree. Without it, running the
-migration before anyone is named locks the whole committee out of Setup. The corollary is
-real: clearing the last admin re-opens Setup to everybody.
-
-### Ordering rule (`bySponsorOrder`)
-
-By festival day (general last) → unclaimed before claimed → dearest first →
-open-amount items last → the order they were added. Applied once in the data layer so the
-committee tab and the donor page cannot drift apart. Unit-checked, and idempotent.
-
-### Verified (demo mode, seeded data, measured not assumed)
-
-Edits round-trip and preserve `status`; a catalogue edit never touches
-`status`/`sponsor_name`/`show_public`, so editing a claimed item cannot strand a
-confirmed sponsorship. Deleting a declined request removes that row only. Day selection
-lands on the right day before, during and after the festival, stops following once a day
-is picked, and survives a re-pull and a focus event — `currentDayIndex` checked across
-eight boundaries. A non-admin's Setup has both fieldsets disabled, all seven controls
-unfocusable and no save buttons, with backup, preview and sign-out still working. No
-horizontal overflow on any tab at 375px with the new forms open. `BASE_PATH` build still
-rewrites asset URLs correctly. **+1.5 KB gzipped, no new dependencies.**
-
-Run `vite --mode demo` with the Supabase vars blank to get this localStorage mode — it
-is how the above was tested without writing to the live database.
-
 ## Gotchas — things that look wrong but are correct
 
+- **Admin gates `festival_config` and nothing else** — name, dates, day count, goal,
+  payment details. Members keep the programme, tasks, donations and sponsorships, and
+  Setup's backup, preview and sign-out stay open to all. Gating day-to-day work behind
+  three people would be a bottleneck, not safety. Enforced in RLS, not just the UI.
+- **`is_admin()` returns true for every member while nobody is flagged.** Load-bearing,
+  not a hole: without it, running the migration before naming anyone locks the whole
+  committee out of Setup. `App.jsx` applies the identical fallback, so screen and
+  database never disagree. Clearing the last admin re-opens Setup to everybody.
+- **`bySponsorOrder` lives in the data layer, not the screens.** Day (general last) →
+  unclaimed before claimed → dearest first → open-amount last → order added. Applied
+  once in `api.getSponsorItems` so the committee tab and the donor page cannot drift.
+- **A catalogue edit never writes `status`, `sponsor_name` or `show_public`.** Those
+  belong to the request queue; rewriting them would strand a confirmed sponsorship.
 - **Payment details are configuration, not code.** Interac email and, since
   2026-09-10, the **bank account name** live in `festival_config`, edited from Setup.
   Not in this repo — it is public, and `updates-2026-09-10.sql` deliberately seeds no
@@ -143,6 +118,48 @@ is how the above was tested without writing to the live database.
 7. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
 
 <!-- HANDOFF:ARCHIVE-BELOW -->
+
+## Archive — 2026-09-10 detail
+
+### What "admin" means here — deliberately narrow
+
+Admin gates **`festival_config` and nothing else**: the festival name, dates, day count,
+goal and payment details. Every member keeps full rights over the programme, tasks,
+donations and sponsorships, and Setup's backup, public preview and sign-out stay open to
+everyone. With ~10 volunteers running a five-day festival from their phones, gating
+day-to-day work behind three people is a bottleneck, not safety.
+
+Enforced in RLS (`festival_config admin write`), not just in the UI. `Setup.jsx` renders
+its two settings cards as `disabled` fieldsets for a non-admin.
+
+### `is_admin()` has a bootstrap clause, on purpose
+
+While **no** member is flagged admin, every member counts as one — in SQL *and* in
+`App.jsx`, which is why the screen and the database always agree. Without it, running the
+migration before anyone is named locks the whole committee out of Setup. The corollary is
+real: clearing the last admin re-opens Setup to everybody.
+
+### Ordering rule (`bySponsorOrder`)
+
+By festival day (general last) → unclaimed before claimed → dearest first →
+open-amount items last → the order they were added. Applied once in the data layer so the
+committee tab and the donor page cannot drift apart. Unit-checked, and idempotent.
+
+### Verified (demo mode, seeded data, measured not assumed)
+
+Edits round-trip and preserve `status`; a catalogue edit never touches
+`status`/`sponsor_name`/`show_public`, so editing a claimed item cannot strand a
+confirmed sponsorship. Deleting a declined request removes that row only. Day selection
+lands on the right day before, during and after the festival, stops following once a day
+is picked, and survives a re-pull and a focus event — `currentDayIndex` checked across
+eight boundaries. A non-admin's Setup has both fieldsets disabled, all seven controls
+unfocusable and no save buttons, with backup, preview and sign-out still working. No
+horizontal overflow on any tab at 375px with the new forms open. `BASE_PATH` build still
+rewrites asset URLs correctly. **+1.5 KB gzipped, no new dependencies.**
+
+Run `vite --mode demo` with the Supabase vars blank to get this localStorage mode — it
+is how the above was tested without writing to the live database.
+
 
 ## Archive — superseded 2026-09-10
 
