@@ -40,8 +40,13 @@ create or replace function public.is_admin()
 returns boolean
 language sql stable security definer set search_path = public
 as $$
-  select exists (select 1 from committee_members where user_id = auth.uid() and is_admin)
-      or not exists (select 1 from committee_members where is_admin)
+  -- Membership first: sign-up is open, so the bootstrap fallback must never
+  -- reach an account that has no committee_members row.
+  select exists (
+    select 1 from committee_members me
+     where me.user_id = auth.uid()
+       and (me.is_admin or not exists (select 1 from committee_members where is_admin))
+  )
 $$;
 
 revoke all on function public.is_admin() from public;
