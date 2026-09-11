@@ -67,7 +67,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
   const byCategory = useMemo(() => {
     const g = {}
     dayItems.forEach((i) => { (g[i.category || 'General'] ||= []).push(i) })
-    return Object.entries(g).sort((a, b) => a[0].localeCompare(b[0]))
+    // No sort here: groups keep the order of their first item, and items arrive
+    // sorted by `bySponsorOrder`, so a group with anything still open comes first.
+    return Object.entries(g)
   }, [dayItems])
 
   const openFor = (target) => { setF(blank); setErr(''); setDone(null); setOpen(target) }

@@ -1,6 +1,6 @@
 # Handoff — Committee Board
 
-**Last session:** 2026-09-10 · seven committee change requests built, **not yet deployed**
+**Last session:** 2026-09-11 · seven committee change requests **live in production**, migration run
 
 > This repository is **public**. Credentials, the Supabase project ref, invite codes
 > and payment details are deliberately kept out of it — they live in the database or
@@ -14,10 +14,12 @@ Setup. Bundle **122.7 KB gzipped** plus a 12.9 KB crest asset.
 **Live in production** since 2026-09-03 — schema run, donor page shipped, donors can
 sponsor at `/#sponsor` today. Festival config is `days = 6` (Sep 14–19), `goal = 25000`.
 
-**Uncommitted on top of that (2026-09-10):** seven changes asked for by the committee,
-built and verified in demo mode but **not deployed**, and
-`supabase/updates-2026-09-10.sql` has **not been run**. The rules those changes settled
-are in Gotchas below; the measured verification is archived.
+**Deployed 2026-09-11:** the seven committee changes below, and
+`supabase/updates-2026-09-10.sql` has been run. Verified on the live site at 375px: bank
+account name in the donor form, no security answer anywhere, Day 1 selected before the
+festival, no page-level sideways scroll. Admin flags set for two of the three named
+members; **Vamsi has not joined yet** and needs one `update ... set is_admin = true` once
+he does. The rules these changes settled are in Gotchas below.
 
 | # | Change | Where |
 |---|--------|-------|
@@ -38,10 +40,15 @@ are in Gotchas below; the measured verification is archived.
 - **`is_admin()` returns true for every member while nobody is flagged.** Load-bearing,
   not a hole: without it, running the migration before naming anyone locks the whole
   committee out of Setup. `App.jsx` applies the identical fallback, so screen and
-  database never disagree. Clearing the last admin re-opens Setup to everybody.
+  database never disagree. Clearing the last admin re-opens Setup to every member.
+  **Membership is checked first:** the first version let *any signed-in account* through
+  during bootstrap (sign-up is open). Caught by an anon probe right after the migration
+  ran, fixed in `17c1148`. Anon `is_admin()` must return `false`.
 - **`bySponsorOrder` lives in the data layer, not the screens.** Day (general last) →
   unclaimed before claimed → dearest first → open-amount last → order added. Applied
   once in `api.getSponsorItems` so the committee tab and the donor page cannot drift.
+  The donor page's category groups must **not** be re-sorted: they keep first-appearance
+  order, so a group holding an open item comes first. An A–Z sort buried open items.
 - **A catalogue edit never writes `status`, `sponsor_name` or `show_public`.** Those
   belong to the request queue; rewriting them would strand a confirmed sponsorship.
 - **Payment details are configuration, not code.** Interac email and, since
@@ -92,18 +99,10 @@ are in Gotchas below; the measured verification is archived.
 
 ## Next steps
 
-1. **Add the real sponsorship items** — the catalogue is empty, so every day currently
-   shows "Nothing listed here yet". Sponsors tab → Add.
+1. **Flag Vamsi as admin once he joins:** `update committee_members set is_admin = true
+   where name ilike 'vamsi%';` — run the select first.
 2. **Config is `days = 6` (Sep 14–19), `goal = 25000`.** Six is correct — confirmed by
    Eswar 2026-09-04 after a member set it. Earlier notes saying five are superseded.
-3. ~~Delete `feature/sponsors-page`~~ — **done 2026-09-03.** A copy of the original is
-   archived outside the repo at `../reference/vamsi-original/`.
-   **Caveat, verified not assumed:** deleting the branch did *not* remove the content.
-   Commit `376945e` is still reachable by SHA and its raw file still returns HTTP 200
-   unauthenticated, Interac answer included — GitHub keeps dangling objects. In practice
-   this changes little: the answer is printed on the donor page for every donor by
-   design, and the admin password guarded a page that no longer exists anywhere. Rotating
-   the answer in Setup is the only action that actually changes the exposure.
 5. **Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`.** `.two` is
    still `1fr 1fr` here, so at 320px it resolves to 151px/98px — the date field hogs the
    row in Setup and in the new Tasks edit form. That branch's `minmax(0,1fr)` fixes all
@@ -111,13 +110,23 @@ are in Gotchas below; the measured verification is archived.
    `main`: doing so would conflict with the branch. Then give the Tasks "Due" date its
    own wide column (see archive). Separately, at 320px the Sponsors filter row
    (Pending/Confirmed/Declined/All) spills ~16px off-screen; clean at 375px.
-6. **Run `supabase/updates-2026-09-10.sql`**, then set the bank account name from Setup
-   and flag the three admins (`update committee_members set is_admin = true where ...`).
-   The file carries the SELECT to check first. Safe to run before deploying: the live
-   build still reads `interac_answer`, which the migration leaves untouched.
+6. ~~Run `supabase/updates-2026-09-10.sql`~~ — **done 2026-09-11**, with the bank account
+   name set and two admins flagged. `interac_answer` is untouched and unread.
 7. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
 
 <!-- HANDOFF:ARCHIVE-BELOW -->
+
+## Archive — finished next steps (moved 2026-09-11)
+
+- ~~Delete `feature/sponsors-page`~~ — **done 2026-09-03.** A copy of the original is
+   archived outside the repo at `../reference/vamsi-original/`.
+   **Caveat, verified not assumed:** deleting the branch did *not* remove the content.
+   Commit `376945e` is still reachable by SHA and its raw file still returns HTTP 200
+   unauthenticated, Interac answer included — GitHub keeps dangling objects. In practice
+   this changes little: the answer is printed on the donor page for every donor by
+   design, and the admin password guarded a page that no longer exists anywhere. Rotating
+   the answer in Setup is the only action that actually changes the exposure.
+
 
 ## Archive — 2026-09-10 detail
 
