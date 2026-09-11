@@ -17,9 +17,8 @@ sponsor at `/#sponsor` today. Festival config is `days = 6` (Sep 14–19), `goal
 **Deployed 2026-09-11:** the seven committee changes below, and
 `supabase/updates-2026-09-10.sql` has been run. Verified on the live site at 375px: bank
 account name in the donor form, no security answer anywhere, Day 1 selected before the
-festival, no page-level sideways scroll. Admin flags set for two of the three named
-members; **Vamsi has not joined yet** and needs one `update ... set is_admin = true` once
-he does. The rules these changes settled are in Gotchas below.
+festival, no page-level sideways scroll. Four admins flagged: the three the
+committee named, plus Eswar at his own request. The rules these changes settled are in Gotchas below.
 
 | # | Change | Where |
 |---|--------|-------|
@@ -99,8 +98,6 @@ he does. The rules these changes settled are in Gotchas below.
 
 ## Next steps
 
-1. **Flag Vamsi as admin once he joins:** `update committee_members set is_admin = true
-   where name ilike 'vamsi%';` — run the select first.
 2. **Config is `days = 6` (Sep 14–19), `goal = 25000`.** Six is correct — confirmed by
    Eswar 2026-09-04 after a member set it. Earlier notes saying five are superseded.
 5. **Merge the date-field fix from `claude/setup-page-tab-layout-mjk1b2`.** `.two` is
@@ -111,7 +108,7 @@ he does. The rules these changes settled are in Gotchas below.
    own wide column (see archive). Separately, at 320px the Sponsors filter row
    (Pending/Confirmed/Declined/All) spills ~16px off-screen; clean at 375px.
 6. ~~Run `supabase/updates-2026-09-10.sql`~~ — **done 2026-09-11**, with the bank account
-   name set and two admins flagged. `interac_answer` is untouched and unread.
+   name set and four admins flagged. `interac_answer` is untouched and unread.
 7. Send the `#sponsor` link to the committee for a dry run before it reaches donors.
 
 <!-- HANDOFF:ARCHIVE-BELOW -->
