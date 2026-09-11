@@ -35,6 +35,12 @@ alter table festival_config add column if not exists interac_email  text;
 alter table festival_config add column if not exists interac_answer text;
 alter table festival_config add column if not exists contact_email  text;
 
+-- SUPERSEDED 2026-09-10: the address is set up for auto-deposit, so there is no
+-- security question to answer and the donor page shows the bank account name
+-- instead. See updates-2026-09-10.sql, which adds interac_name. interac_answer
+-- is kept above so re-running this file on the live database changes nothing.
+alter table festival_config add column if not exists interac_name   text;
+
 -- Shown under the festival name on the board and the public page. Editable from
 -- Setup so the committee can reword it without a deploy.
 alter table festival_config add column if not exists description    text;

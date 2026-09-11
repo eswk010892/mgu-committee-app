@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, Trash2, UserPlus } from 'lucide-react'
+import { Plus, Trash2, UserPlus, Pencil, X } from 'lucide-react'
 import { TASK_CATS } from '../lib/constants.js'
 
 /**
@@ -13,6 +13,26 @@ export default function Tasks({ tasks, people, me, addTask, updateTask, removeTa
   const [assigning, setAssigning] = useState(null)
   const blank = { title: '', category: 'Other', owner: '', due_date: '' }
   const [f, setF] = useState(blank)
+
+  // The task being edited, held as a draft so an abandoned edit changes nothing.
+  const [editing, setEditing] = useState(null)   // task id, or null
+  const [ed, setEd] = useState(blank)
+
+  const startEdit = (t) => {
+    setAssigning(null)
+    setEditing(t.id)
+    setEd({ title: t.title || '', category: t.category || 'Other',
+            owner: t.owner || '', due_date: t.due_date || '' })
+  }
+
+  const saveEdit = async (id) => {
+    if (!ed.title.trim()) return
+    await updateTask(id, {
+      title: ed.title.trim(), category: ed.category,
+      owner: ed.owner.trim() || null, due_date: ed.due_date || null,
+    })
+    setEditing(null)
+  }
 
   const submit = async () => {
     if (!f.title.trim()) return
@@ -84,6 +104,32 @@ export default function Tasks({ tasks, people, me, addTask, updateTask, removeTa
           </div>
         ) : list.map((t) => (
           <div className="item" key={t.id}>
+            {editing === t.id ? (
+              <>
+                <label className="fld"><span>Task</span>
+                  <input autoFocus value={ed.title}
+                    onChange={(ev) => setEd({ ...ed, title: ev.target.value })} /></label>
+                <div className="two">
+                  <label className="fld"><span>Area</span>
+                    <select value={ed.category}
+                      onChange={(ev) => setEd({ ...ed, category: ev.target.value })}>
+                      {TASK_CATS.map((c) => <option key={c}>{c}</option>)}</select></label>
+                  <label className="fld"><span>Due</span>
+                    <input type="date" value={ed.due_date}
+                      onChange={(ev) => setEd({ ...ed, due_date: ev.target.value })} /></label>
+                </div>
+                <label className="fld"><span>Assign to</span>
+                  <select value={ed.owner} onChange={(ev) => setEd({ ...ed, owner: ev.target.value })}>
+                    <option value="">Unassigned</option>
+                    {names.map((n) => <option key={n}>{n}</option>)}
+                    {ed.owner && !names.includes(ed.owner) && <option>{ed.owner}</option>}
+                  </select></label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn btn-go" onClick={() => saveEdit(t.id)}>Save changes</button>
+                  <button className="btn" onClick={() => setEditing(null)}><X size={13} /> Cancel</button>
+                </div>
+              </>
+            ) : (
             <div className="row">
               <button className="btn btn-ghost" onClick={() => cycle(t)}
                 aria-label="Change status" style={{ paddingLeft: 0 }}>
@@ -109,9 +155,12 @@ export default function Tasks({ tasks, people, me, addTask, updateTask, removeTa
                   </button>
                 )}
               </div>
+              <button className="btn btn-ghost" aria-label="Edit"
+                onClick={() => startEdit(t)}><Pencil size={15} /></button>
               <button className="btn btn-ghost" aria-label="Remove"
                 onClick={() => removeTask(t.id)}><Trash2 size={15} /></button>
             </div>
+            )}
           </div>
         ))}
       </div>

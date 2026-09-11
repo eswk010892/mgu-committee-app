@@ -11,7 +11,7 @@
  */
 import { supabase, isConfigured } from './supabase.js'
 import { DEFAULT_CFG, ANON } from './constants.js'
-import { uid, todayLocal } from './format.js'
+import { uid, todayLocal, bySponsorOrder } from './format.js'
 
 /* ------------------------------------------------------------------ demo -- */
 
@@ -172,13 +172,18 @@ export async function removeTask(id) {
 
 /* ---------------------------------------------------------- sponsorships -- */
 
-/** The catalogue. Public — this is what donors browse. */
+/**
+ * The catalogue. Public — this is what donors browse.
+ *
+ * Ordered here rather than in each screen so the committee tab and the donor
+ * page can never disagree about what comes first. See `bySponsorOrder`.
+ */
 export async function getSponsorItems() {
-  if (!isConfigured) return readDemo().sponsorItems
+  if (!isConfigured) return [...readDemo().sponsorItems].sort(bySponsorOrder)
   const { data, error } = await supabase.from('sponsorship_items')
     .select('*').order('day_index', { nullsFirst: false }).order('sort_order')
   if (error) { console.error(error); return [] }
-  return data || []
+  return (data || []).sort(bySponsorOrder)
 }
 
 /** Requests carry donor email and phone. RLS returns nothing to a non-member. */
@@ -314,6 +319,24 @@ export async function declineSponsorship(id) {
   const { data, error } = await supabase.rpc('decline_sponsorship', { p_request_id: id })
   if (error) throw error
   return data
+}
+
+/**
+ * Committee: remove a request record for good.
+ *
+ * Only offered for declined requests. Declining has already freed the item and
+ * removed any donation row, so this deletes nothing but the dead record — and
+ * it clears the donor's email and phone from the database along with it, which
+ * is the right thing to do with contact details nobody needs any more.
+ */
+export async function removeSponsorRequest(id) {
+  if (!isConfigured) {
+    const d = readDemo()
+    d.sponsorRequests = d.sponsorRequests.filter((r) => r.id !== id)
+    writeDemo(d); return
+  }
+  const { error } = await supabase.from('sponsorship_requests').delete().eq('id', id)
+  if (error) throw error
 }
 
 /* ------------------------------------------------------------- live feed -- */

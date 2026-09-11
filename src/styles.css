@@ -55,6 +55,11 @@ h1,h2,h3,.display{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spac
 
 .card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:14px;}
 .card + .card{margin-top:10px;}
+/* A card that is also a <fieldset>, so a whole block of settings can be
+   disabled in one place. min-width:0 undoes the UA min-content default, which
+   otherwise stops the two-column rows inside from shrinking on a phone. */
+.plain-set{min-width:0;margin:0;}
+.plain-set:disabled{opacity:.62;}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
 .stat{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:13px 14px;}
@@ -367,8 +372,7 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
 .sp-interac-row span{font-size:11.5px;font-weight:600;letter-spacing:.03em;
   color:var(--sp-muted);text-transform:uppercase;}
 .sp-interac-row b{font-size:14px;color:var(--sp-ink);word-break:break-all;text-align:right;}
-.sp-answer{font-family:'Space Mono',monospace;background:#fff;border:1px solid var(--sp-line);
-  border-radius:7px;padding:2px 8px;user-select:all;}
+.sp-acct{word-break:normal;}
 .sp-interac-note{font-size:11.5px;color:var(--sp-muted);line-height:1.55;margin-top:9px;}
 
 .sp-thanks{text-align:center;padding:6px 4px 4px;}

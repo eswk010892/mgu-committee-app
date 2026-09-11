@@ -14,8 +14,12 @@ create table if not exists committee_members (
   name        text not null,
   role        text,
   phone       text,
+  -- Membership grants full day-to-day access. is_admin grants one thing on top
+  -- of it: changing festival_config. See is_admin() below.
+  is_admin    boolean not null default false,
   created_at  timestamptz not null default now()
 );
+alter table committee_members add column if not exists is_admin boolean not null default false;
 
 -- security definer so policies can call it without recursing into RLS
 create or replace function public.is_committee()
@@ -25,6 +29,23 @@ as $$ select exists (select 1 from committee_members where user_id = auth.uid())
 
 revoke all on function public.is_committee() from public;
 grant execute on function public.is_committee() to anon, authenticated;
+
+-- Admins may change the festival settings — name, dates, day count, goal and
+-- the sponsorship payment details. Everything else stays open to every member.
+--
+-- While NO member is flagged as an admin, every member counts as one, so a
+-- fresh install is not locked out of Setup before anybody has been named. The
+-- app applies the same fallback, so the screen and the database agree.
+create or replace function public.is_admin()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select exists (select 1 from committee_members where user_id = auth.uid() and is_admin)
+      or not exists (select 1 from committee_members where is_admin)
+$$;
+
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- FESTIVAL SETTINGS  (public: name, dates, day count)
@@ -124,6 +145,7 @@ begin
     execute format('drop policy if exists "%s public read" on %I', t, t);
     execute format('drop policy if exists "%s committee read" on %I', t, t);
     execute format('drop policy if exists "%s committee write" on %I', t, t);
+    execute format('drop policy if exists "%s admin write" on %I', t, t);
   end loop;
 end $$;
 
@@ -146,8 +168,10 @@ create policy "tasks committee read" on tasks
   for select to authenticated using (is_committee());
 
 -- Writes: committee members only, everywhere.
-create policy "festival_config committee write" on festival_config
-  for all to authenticated using (is_committee()) with check (is_committee());
+-- The settings are the one thing a member cannot change: they alter the
+-- festival for everybody, and for every visitor to the public link.
+create policy "festival_config admin write" on festival_config
+  for all to authenticated using (is_admin()) with check (is_admin());
 create policy "events committee write" on events
   for all to authenticated using (is_committee()) with check (is_committee());
 create policy "event_notes committee write" on event_notes

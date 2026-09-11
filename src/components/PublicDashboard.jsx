@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Coins, Package, Radio, Calendar, HandHeart } from 'lucide-react'
-import { dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
+import { currentDayIndex, dayDate, fmtDay, money, timeAgo } from '../lib/format.js'
 import { DEVA, DEFAULT_DESCRIPTION } from '../lib/constants.js'
 import GaneshMark from './GaneshMark.jsx'
 import Crest from './Crest.jsx'
@@ -20,6 +20,21 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
   const [tab, setTab] = useState('schedule')      // schedule | donate
   const [day, setDay] = useState(0)
+
+  /**
+   * Open on the day the festival is actually on — during the festival somebody
+   * following the link on the 15th wants Day 2, not Day 1. Before sthapana it
+   * stays on Day 1; after the last day it stays on the last day.
+   *
+   * Set from an effect rather than as the initial state because the dates
+   * arrive from the database after the first render. It stops once the visitor
+   * has chosen a day, so the page never moves under them.
+   */
+  const picked = useRef(false)
+  const chooseDay = (i) => { picked.current = true; setDay(i) }
+  useEffect(() => {
+    if (!picked.current) setDay(currentDayIndex(cfg))
+  }, [cfg.start_date, cfg.days])
 
   const daysLeft = Math.ceil((new Date(cfg.start_date + 'T12:00:00') - new Date()) / 86400000)
 
@@ -61,7 +76,7 @@ export default function PublicDashboard({ cfg, events, donations, sponsorItems =
 
       {tab === 'schedule' ? (
         <>
-          <Garland cfg={cfg} day={day} setDay={setDay} events={events} />
+          <Garland cfg={cfg} day={day} setDay={chooseDay} events={events} />
 
           <div className="card">
             <div className="row" style={{ marginBottom: dayEvents.length ? 6 : 0 }}>

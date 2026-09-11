@@ -6,7 +6,7 @@ export const DEFAULT_CFG = {
   // Real values live in the database, never in this public repo. See
   // supabase/sponsorships.sql and the Setup tab.
   interac_email: '',
-  interac_answer: '',
+  interac_name: '',
   contact_email: '',
   description: '',
 }

@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Check, X, Loader2, ArrowLeft } from 'lucide-react'
 
-import { dayDate, fmtDay, money } from '../lib/format.js'
+import { currentDayIndex, dayDate, fmtDay, money } from '../lib/format.js'
 import { PAY_METHODS } from '../lib/constants.js'
 import Crest from './Crest.jsx'
 
@@ -30,6 +30,13 @@ const REASONS = {
 export default function SponsorPublic({ cfg, items, submit, onBack, embedded = false }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
   const [day, setDay] = useState(0)
+  // Open on the day the festival is actually on, and stop once the donor picks
+  // one — same rule as the public schedule. See `currentDayIndex`.
+  const picked = useRef(false)
+  const chooseDay = (i) => { picked.current = true; setDay(i) }
+  useEffect(() => {
+    if (!picked.current) setDay(currentDayIndex(cfg))
+  }, [cfg.start_date, cfg.days])
   const [open, setOpen] = useState(null)      // item object, or GENERAL, or null
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(null)      // the submitted form, once accepted
@@ -41,10 +48,13 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
 
   const isGeneral = open === GENERAL
   const item = isGeneral ? null : open
-  // Payment details come from festival_config, so nothing sensitive is committed
-  // to the repo and the committee can rotate the answer without a deploy.
+  // Payment details come from festival_config, so nothing is committed to the
+  // repo and the committee can change them from Setup without a deploy.
+  // The account name is shown instead of a security answer: the address is set
+  // up for auto-deposit, so there is no question to answer — what a donor needs
+  // is confirmation of who the money is going to before they send it.
   const interac = cfg.interac_email
-    ? { email: cfg.interac_email, answer: cfg.interac_answer }
+    ? { email: cfg.interac_email, name: cfg.interac_name }
     : null
   // A priced item is sponsored at its listed price; an open-amount item (0) and
   // a general sponsorship both ask the donor for a figure.
@@ -103,11 +113,11 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
 
       <nav className="sp-tabs" aria-label="Festival day">
         {Array.from({ length: nDays }, (_, i) => (
-          <button key={i} className="sp-tab" data-on={day === i ? '1' : '0'} onClick={() => setDay(i)}>
+          <button key={i} className="sp-tab" data-on={day === i ? '1' : '0'} onClick={() => chooseDay(i)}>
             Day {i + 1}<span>{fmtDay(dayDate(cfg, i)).replace(/^\w+,\s*/, '')}</span>
           </button>
         ))}
-        <button className="sp-tab" data-on={day === 'general' ? '1' : '0'} onClick={() => setDay('general')}>
+        <button className="sp-tab" data-on={day === 'general' ? '1' : '0'} onClick={() => chooseDay('general')}>
           General<span>any day</span>
         </button>
       </nav>
@@ -186,9 +196,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                       <div className="sp-interac-row">
                         <span>Interac e-Transfer to</span><b>{interac.email}</b>
                       </div>
-                      {interac.answer && (
+                      {interac.name && (
                         <div className="sp-interac-row">
-                          <span>Security answer</span><b className="sp-answer">{interac.answer}</b>
+                          <span>Account name</span><b className="sp-acct">{interac.name}</b>
                         </div>
                       )}
                     </div>
@@ -265,9 +275,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                     <div className="sp-interac-row">
                       <span>Send to</span><b>{interac.email}</b>
                     </div>
-                    {interac.answer && (
+                    {interac.name && (
                       <div className="sp-interac-row">
-                        <span>Security answer</span><b className="sp-answer">{interac.answer}</b>
+                        <span>Account name</span><b className="sp-acct">{interac.name}</b>
                       </div>
                     )}
                     <p className="sp-interac-note">

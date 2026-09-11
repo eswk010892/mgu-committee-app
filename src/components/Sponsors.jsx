@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Plus, Trash2, Check, Undo2, Download, ExternalLink, Mail, Phone,
-         ClipboardList, Eye } from 'lucide-react'
+         ClipboardList, Eye, Pencil, X } from 'lucide-react'
 
 import { dayDate, fmtDay, money, timeAgo, toCSV, download, todayLocal } from '../lib/format.js'
 import { SPONSOR_CATS } from '../lib/constants.js'
@@ -15,7 +15,7 @@ import SponsorPublic from './SponsorPublic.jsx'
  */
 export default function Sponsors({ cfg, items, requests, day,
                                    addItem, updateItem, removeItem,
-                                   confirmRequest, declineRequest,
+                                   confirmRequest, declineRequest, removeRequest,
                                    submitSponsorship, onOpenPublic }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
   const [view, setView] = useState('manage')      // manage | donor
@@ -25,6 +25,10 @@ export default function Sponsors({ cfg, items, requests, day,
 
   const blank = { day_index: day, category: SPONSOR_CATS[0], title: '', amount: '', note: '' }
   const [f, setF] = useState(blank)
+
+  // The catalogue entry being edited, held as a draft so cancelling changes nothing.
+  const [editing, setEditing] = useState(null)   // item id, or null
+  const [ed, setEd] = useState(blank)
 
   const pending = requests.filter((r) => r.status === 'pending')
   const confirmed = requests.filter((r) => r.status === 'confirmed')
@@ -47,6 +51,31 @@ export default function Sponsors({ cfg, items, requests, day,
       sort_order: Date.now() % 100000,
     })
     setF({ ...blank, day_index: f.day_index, category: f.category })
+  }
+
+  const startEdit = (it) => {
+    setEditing(it.id)
+    setEd({ day_index: it.day_index == null ? 'general' : it.day_index,
+            category: it.category || 'General', title: it.title || '',
+            amount: Number(it.amount) > 0 ? String(it.amount) : '',
+            note: it.note || '' })
+  }
+
+  /**
+   * Edits the description of an item, never its state. `status`, `sponsor_name`
+   * and `show_public` are not in the patch — those belong to the request queue,
+   * and rewriting them from here would strand a confirmed sponsorship.
+   */
+  const saveEdit = async (id) => {
+    if (!ed.title.trim()) return
+    await updateItem(id, {
+      day_index: ed.day_index === 'general' ? null : Number(ed.day_index),
+      category: ed.category.trim() || 'General',
+      title: ed.title.trim(),
+      amount: Number(ed.amount) || 0,
+      note: ed.note.trim() || null,
+    })
+    setEditing(null)
   }
 
   const act = async (fn, id) => { setBusy(id); try { await fn(id) } finally { setBusy(null) } }
@@ -155,10 +184,22 @@ export default function Sponsors({ cfg, items, requests, day,
               ) : (
                 <span className="chip chip-done">Confirmed · in the donor feed</span>
               )}
-              {r.status !== 'declined' && (
+              {r.status !== 'declined' ? (
                 <button className="btn" disabled={busy === r.id}
                   onClick={() => act(declineRequest, r.id)}>
                   <Undo2 size={13} /> {r.status === 'confirmed' ? 'Undo' : 'Decline'}
+                </button>
+              ) : (
+                // Declining has already freed the item and reversed any donation,
+                // so there is nothing left here but the record and the donor's
+                // contact details. Deleting it takes those out of the database.
+                <button className="btn" disabled={busy === r.id}
+                  onClick={() => {
+                    if (window.confirm(`Delete the declined request from ${r.donor_name}? `
+                      + 'This removes their contact details for good and cannot be undone.'))
+                      act(removeRequest, r.id)
+                  }}>
+                  <Trash2 size={13} /> Delete
                 </button>
               )}
             </div>
@@ -167,6 +208,12 @@ export default function Sponsors({ cfg, items, requests, day,
       </div>
 
       {/* -------------------------------------------------- the catalogue -- */}
+      {/* Shared by the add form and every row's edit form, so it has to sit
+          outside both — a datalist inside a collapsed form does not exist. */}
+      <datalist id="sp-cats">
+        {SPONSOR_CATS.map((c) => <option key={c} value={c} />)}
+      </datalist>
+
       <div className="row" style={{ margin: '22px 0 8px' }}>
         <h3 style={{ fontSize: 15 }}>What can be sponsored ({items.length})</h3>
         <button className="btn" onClick={() => setOpen(!open)}>
@@ -187,10 +234,7 @@ export default function Sponsors({ cfg, items, requests, day,
               </select></label>
             <label className="fld"><span>Category</span>
               <input list="sp-cats" value={f.category}
-                onChange={(e) => setF({ ...f, category: e.target.value })} />
-              <datalist id="sp-cats">
-                {SPONSOR_CATS.map((c) => <option key={c} value={c} />)}
-              </datalist></label>
+                onChange={(e) => setF({ ...f, category: e.target.value })} /></label>
           </div>
           <label className="fld"><span>What is being sponsored</span>
             <input placeholder="Day 1 mahaprasad" value={f.title}
@@ -215,6 +259,45 @@ export default function Sponsors({ cfg, items, requests, day,
           </div>
         ) : items.map((it) => (
           <div className="item" key={it.id}>
+            {editing === it.id ? (
+              <>
+                <div className="two">
+                  <label className="fld"><span>Day</span>
+                    <select value={ed.day_index}
+                      onChange={(e) => setEd({ ...ed, day_index: e.target.value === 'general' ? 'general' : Number(e.target.value) })}>
+                      {Array.from({ length: nDays }, (_, i) => (
+                        <option key={i} value={i}>Day {i + 1} · {fmtDay(dayDate(cfg, i))}</option>
+                      ))}
+                      <option value="general">General · any day</option>
+                    </select></label>
+                  <label className="fld"><span>Category</span>
+                    <input list="sp-cats" value={ed.category}
+                      onChange={(e) => setEd({ ...ed, category: e.target.value })} /></label>
+                </div>
+                <label className="fld"><span>What is being sponsored</span>
+                  <input autoFocus value={ed.title}
+                    onChange={(e) => setEd({ ...ed, title: e.target.value })} /></label>
+                <div className="two">
+                  <label className="fld"><span>Amount (CAD) — 0 for open</span>
+                    <input type="number" inputMode="decimal" min="0" value={ed.amount}
+                      onChange={(e) => setEd({ ...ed, amount: e.target.value })} /></label>
+                  <label className="fld"><span>Note (optional)</span>
+                    <input value={ed.note}
+                      onChange={(e) => setEd({ ...ed, note: e.target.value })} /></label>
+                </div>
+                {it.status !== 'available' && (
+                  <div className="item-m" style={{ marginBottom: 8 }}>
+                    Someone has already claimed this one. Editing the wording is fine —
+                    to free it up, decline their request in the queue above.
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn btn-go" onClick={() => saveEdit(it.id)}>Save changes</button>
+                  <button className="btn" onClick={() => setEditing(null)}><X size={13} /> Cancel</button>
+                </div>
+              </>
+            ) : (
+            <>
             <div className="row">
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="item-t">{it.title}</div>
@@ -246,9 +329,13 @@ export default function Sponsors({ cfg, items, requests, day,
                   Show the name publicly
                 </label>
               )}
-              <button className="btn-ghost" title="Remove" style={{ marginLeft: 'auto' }}
+              <button className="btn-ghost" title="Edit" style={{ marginLeft: 'auto' }}
+                onClick={() => startEdit(it)}><Pencil size={15} /></button>
+              <button className="btn-ghost" title="Remove"
                 onClick={() => removeItem(it.id)}><Trash2 size={15} /></button>
             </div>
+            </>
+            )}
           </div>
         ))}
       </div>

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Calendar, CheckSquare, Users, Settings, Flame, HandHeart } from 'lucide-react'
 
 import { useAuth } from './lib/auth.js'
 import * as api from './lib/api.js'
 import { DEFAULT_CFG, DEFAULT_DESCRIPTION } from './lib/constants.js'
-import { dayDate, fmtDay } from './lib/format.js'
+import { currentDayIndex, dayDate, fmtDay } from './lib/format.js'
 
 import Garland from './components/Garland.jsx'
 import Overview from './components/Overview.jsx'
@@ -73,6 +73,29 @@ export default function App() {
   }, [auth.status, pull])
 
   useEffect(() => { if (committee && screen === 'login') setScreen('app') }, [committee, screen])
+
+  /**
+   * Land on the day the festival is actually on, rather than always Day 1.
+   * Runs when the dates arrive from the database and whenever they change, but
+   * never after a member has picked a day for themselves — the board should not
+   * jump out from under someone reading Day 4.
+   */
+  const picked = useRef(false)
+  const chooseDay = useCallback((i) => { picked.current = true; setDay(i) }, [])
+  useEffect(() => {
+    if (!picked.current) setDay(currentDayIndex(cfg))
+  }, [cfg.start_date, cfg.days])
+
+  /**
+   * Only admins may change the festival settings. Enforced in the database as
+   * well — see supabase/updates-2026-09-10.sql; this only decides what the tab
+   * offers. Before anybody has been made an admin every member counts as one,
+   * which matches the same fallback in the database and stops a fresh install
+   * locking everyone out of Setup.
+   */
+  const anyAdmin = people.some((p) => p.is_admin)
+  const isAdmin = auth.demo || !anyAdmin || people.some(
+    (p) => p.id === auth.user?.id && p.is_admin)
 
   const openTasks = tasks.filter((t) => t.status !== 'done').length
 
@@ -164,7 +187,7 @@ export default function App() {
           </div>
         )}
 
-        <Garland cfg={cfg} day={day} setDay={setDay} events={events} />
+        <Garland cfg={cfg} day={day} setDay={chooseDay} events={events} />
 
         {tab === 'overview' && (
           <Overview cfg={cfg} openTasks={openTasks} sponsorReqs={sponsorReqs}
@@ -181,12 +204,14 @@ export default function App() {
             addItem={wrap(api.addSponsorItem)} updateItem={wrap(api.updateSponsorItem)}
             removeItem={wrap(api.removeSponsorItem)}
             confirmRequest={wrap(api.confirmSponsorship)} declineRequest={wrap(api.declineSponsorship)}
+            removeRequest={wrap(api.removeSponsorRequest)}
             submitSponsorship={async (form) => {
               const r = await api.submitSponsorship(form); await pull(); return r }}
             onOpenPublic={() => setScreen('sponsor')} />)}
         {tab === 'team' && <Team people={people} tasks={tasks} me={auth.profile?.name} />}
         {tab === 'setup' && (
           <Setup cfg={cfg} saveConfig={wrap(api.saveConfig)} auth={auth} demo={auth.demo}
+            isAdmin={isAdmin}
             onPreviewPublic={() => setScreen('preview')}
             data={() => ({ cfg, events, notes, donations, tasks, people })}
             counts={{ events: events.length, tasks: tasks.length,

@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, LogOut } from 'lucide-react'
+import { Eye, LogOut, Lock } from 'lucide-react'
 import { download, toCSV, todayLocal } from '../lib/format.js'
 
-export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPublic, data }) {
+/**
+ * `isAdmin` gates the two cards that change the festival for everybody — the
+ * settings and the payment details. Everything else here (who sees what, the
+ * public preview, the backup, sign out) stays open to every member, because a
+ * volunteer locked out of sign-out is a support call at the mandap.
+ */
+export default function Setup({ cfg, saveConfig, counts, auth, demo, isAdmin,
+                                onPreviewPublic, data }) {
   const [d, setD] = useState(cfg)
   const [saved, setSaved] = useState(false)
 
@@ -29,7 +36,7 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
       days: Number(d.days), goal: Number(d.goal),
       description: d.description || null,
       interac_email: d.interac_email || null,
-      interac_answer: d.interac_answer || null,
+      interac_name: d.interac_name || null,
       contact_email: d.contact_email || null,
     }
     const patch = {}
@@ -50,7 +57,17 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
     <>
       <h2 style={{ fontSize: 18, marginBottom: 10 }}>Setup</h2>
 
-      <div className="card">
+      {!isAdmin && (
+        <div className="banner" style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <Lock size={15} style={{ flex: '0 0 auto', marginTop: 2 }} />
+          <span>
+            The festival settings and the payment details are looked after by the admins.
+            You can read them here, and everything else on this page still works.
+          </span>
+        </div>
+      )}
+
+      <fieldset className="card plain-set" disabled={!isAdmin}>
         <label className="fld"><span>Festival name</span>
           <input value={d.name} onChange={(e) => edit({ name: e.target.value })} /></label>
         <div className="two">
@@ -66,31 +83,36 @@ export default function Setup({ cfg, saveConfig, counts, auth, demo, onPreviewPu
             onChange={(e) => edit({ description: e.target.value })} /></label>
         <label className="fld"><span>Fundraising goal (CAD)</span>
           <input type="number" value={d.goal} onChange={(e) => edit({ goal: e.target.value })} /></label>
-        <button className="btn btn-go" onClick={save}>{saved ? 'Saved' : 'Save settings'}</button>
-      </div>
+        {isAdmin && (
+          <button className="btn btn-go" onClick={save}>{saved ? 'Saved' : 'Save settings'}</button>
+        )}
+      </fieldset>
 
-      <div className="card">
+      <fieldset className="card plain-set" disabled={!isAdmin}>
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Sponsorship payment details</h3>
         <div className="item-m" style={{ marginBottom: 10 }}>
           Shown to donors on the sponsorship page when they choose Interac. Kept here rather
-          than in the code because the app&apos;s source is public — change the answer here and
-          it takes effect straight away, with no redeploy.
+          than in the code because the app&apos;s source is public — change these and they take
+          effect straight away, with no redeploy.
         </div>
         <label className="fld"><span>Interac e-Transfer email</span>
           <input type="email" inputMode="email" placeholder="mtlganeshutsav@gmail.com"
             value={d.interac_email || ''}
             onChange={(e) => edit({ interac_email: e.target.value })} /></label>
-        <label className="fld"><span>Security answer</span>
-          <input placeholder="Set by the committee" value={d.interac_answer || ''}
-            onChange={(e) => edit({ interac_answer: e.target.value })} /></label>
+        <label className="fld"><span>Bank account name</span>
+          <input placeholder="The name on the receiving account" value={d.interac_name || ''}
+            onChange={(e) => edit({ interac_name: e.target.value })} /></label>
         <div className="item-m">
-          Leave the email blank and the page simply tells donors a committee member will be
-          in touch — no payment details are shown at all.
+          The address is set up for auto-deposit, so donors are shown the account name to
+          confirm who the money reaches — no security answer is asked for. Leave the email
+          blank and the page simply tells donors a committee member will be in touch.
         </div>
-        <button className="btn btn-go" style={{ marginTop: 10 }} onClick={save}>
-          {saved ? 'Saved' : 'Save settings'}
-        </button>
-      </div>
+        {isAdmin && (
+          <button className="btn btn-go" style={{ marginTop: 10 }} onClick={save}>
+            {saved ? 'Saved' : 'Save settings'}
+          </button>
+        )}
+      </fieldset>
 
       <div className="card">
         <h3 style={{ fontSize: 14, marginBottom: 8 }}>Who sees what</h3>
