@@ -295,6 +295,21 @@ code{background:#1C1626;border:1px solid var(--edge);border-radius:4px;padding:1
   padding:8px 15px;cursor:pointer;justify-self:end;}
 .sp-row-btn:hover{background:#1B1945;}
 
+/* Pots: many donors, one target. The bar is what is still needed. */
+.sp-row-amt small{display:block;font-family:Inter,sans-serif;font-size:10px;font-weight:600;
+  color:var(--sp-muted);letter-spacing:.04em;margin-top:1px;}
+.sp-pot-meter{grid-column:1 / -1;margin:6px 0 4px;}
+.sp-pot-bar{height:8px;border-radius:99px;background:#EFE8DC;overflow:hidden;}
+.sp-pot-bar i{display:block;height:100%;border-radius:99px;background:var(--sp-flame);
+  transition:width .6s ease;}
+.sp-pot-meta{font-size:11.5px;color:var(--sp-muted);margin-top:5px;}
+.sp-pot .sp-row-btn{grid-row:3;}
+.sp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px;}
+.sp-chip{background:var(--sp-card);border:1px solid var(--sp-line);border-radius:99px;
+  padding:6px 12px;font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;
+  color:var(--sp-indigo);cursor:pointer;}
+.sp-chip[data-on="1"]{border-color:var(--sp-flame);background:#FBEFE5;color:var(--sp-flame);}
+
 .sp-empty{text-align:center;padding:34px 18px;color:var(--sp-muted);}
 .sp-empty img{margin:0 auto 12px;opacity:.75;}
 .sp-empty h3{font-size:16px;color:var(--sp-ink);margin-bottom:6px;}

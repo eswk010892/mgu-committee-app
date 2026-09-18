@@ -216,6 +216,17 @@ export async function updateSponsorItem(id, patch) {
   if (error) throw error
 }
 
+/** Demo mirror of refresh_pot(): recount a pot from its live requests. */
+function refreshPotDemo(d, itemId) {
+  const live = d.sponsorRequests.filter((r) =>
+    r.item_id === itemId && r.kind === 'pot' && r.status !== 'declined')
+  const raised = live.reduce((s, r) => s + Number(r.amount || 0), 0)
+  d.sponsorItems = d.sponsorItems.map((i) => (i.id === itemId && i.pooled
+    ? { ...i, raised, backers: live.length,
+        status: Number(i.amount) > 0 && raised >= Number(i.amount) ? 'taken' : 'available' }
+    : i))
+}
+
 export async function removeSponsorItem(id) {
   if (!isConfigured) {
     const d = readDemo()
@@ -238,10 +249,18 @@ export async function submitSponsorship(f) {
     const d = readDemo()
     const item = f.itemId ? d.sponsorItems.find((i) => i.id === f.itemId) : null
     if (f.itemId && !item) return 'no-such-item'
-    if (item && item.status !== 'available') return 'item-taken'
-    if (item && d.sponsorRequests.some((r) => r.item_id === item.id && r.status !== 'declined'))
-      return 'item-taken'
-    const amount = item && Number(item.amount) > 0 ? Number(item.amount) : Number(f.amount)
+    const pot = !!item?.pooled
+    if (pot) {
+      const left = Number(item.amount) - Number(item.raised || 0)
+      if (!(Number(f.amount) > 0)) return 'bad-amount'
+      if (Number(item.amount) > 0 && left <= 0) return 'item-taken'
+      if (Number(item.amount) > 0 && Number(f.amount) > left) return 'over-pot'
+    } else {
+      if (item && item.status !== 'available') return 'item-taken'
+      if (item && d.sponsorRequests.some((r) => r.item_id === item.id && r.status !== 'declined'))
+        return 'item-taken'
+    }
+    const amount = item && !pot && Number(item.amount) > 0 ? Number(item.amount) : Number(f.amount)
     if (!amount || amount <= 0) return 'bad-amount'
     if (!f.name?.trim()) return 'no-name'
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email || '')) return 'bad-email'
@@ -251,14 +270,15 @@ export async function submitSponsorship(f) {
       id: uid(), item_id: f.itemId || null,
       item_label: item ? item.title : 'General sponsorship',
       item_day: item ? item.day_index : (f.day ?? null),
-      kind: item ? 'item' : 'general',
+      kind: pot ? 'pot' : item ? 'item' : 'general',
       donor_name: f.name.trim(), org: f.org?.trim() || null,
       email: f.email.trim().toLowerCase(), phone: f.phone.trim(),
       amount, pay_method: f.payMethod, show_name: f.showName !== false,
       message: f.message?.trim() || null, status: 'pending', donation_id: null,
       created_at: new Date().toISOString(),
     })
-    if (item) d.sponsorItems = d.sponsorItems.map((i) =>
+    if (pot) refreshPotDemo(d, item.id)
+    else if (item) d.sponsorItems = d.sponsorItems.map((i) =>
       (i.id === item.id ? { ...i, status: 'pending' } : i))
     writeDemo(d); return 'ok'
   }
@@ -292,7 +312,8 @@ export async function confirmSponsorship(id) {
     d.priv[did] = { real_name: r.donor_name,
                     note: `Sponsorship: ${r.item_label || 'General'} · ${r.email}` }
     r.status = 'confirmed'; r.donation_id = did
-    if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
+    if (r.kind === 'pot') refreshPotDemo(d, r.item_id)
+    else if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
       (i.id === r.item_id ? { ...i, status: 'taken', sponsor_name: pub } : i))
     writeDemo(d); return 'ok'
   }
@@ -312,7 +333,8 @@ export async function declineSponsorship(id) {
       delete d.priv[r.donation_id]
     }
     r.status = 'declined'; r.donation_id = null
-    if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
+    if (r.kind === 'pot') refreshPotDemo(d, r.item_id)
+    else if (r.item_id) d.sponsorItems = d.sponsorItems.map((i) =>
       (i.id === r.item_id ? { ...i, status: 'available', sponsor_name: null } : i))
     writeDemo(d); return 'ok'
   }

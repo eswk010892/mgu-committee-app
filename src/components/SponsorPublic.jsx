@@ -7,6 +7,13 @@ import Crest from './Crest.jsx'
 
 const GENERAL = '__general__'
 
+/** Suggested contributions to a pot. Only the ones that still fit are offered. */
+const CHIP_INS = [51, 101, 251, 501]
+
+/** What is still needed in a pot. Infinity for a pot with no target. */
+const potLeft = (it) => (Number(it.amount) > 0
+  ? Math.max(0, Number(it.amount) - Number(it.raised || 0)) : Infinity)
+
 /** Reasons the database can refuse a submission, in words a donor understands. */
 const REASONS = {
   'item-taken': 'Someone just claimed this one. Pick another item, or make a general sponsorship.',
@@ -16,6 +23,7 @@ const REASONS = {
   'no-pay-method': 'Please choose how you would like to pay.',
   'no-phone': 'Please give a phone number — the committee calls to confirm every sponsorship.',
   'no-such-item': 'That item is no longer listed.',
+  'over-pot': 'That is more than this pot still needs. Please lower the amount.',
   error: 'Something went wrong. Please try again.',
 }
 
@@ -58,7 +66,12 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
     : null
   // A priced item is sponsored at its listed price; an open-amount item (0) and
   // a general sponsorship both ask the donor for a figure.
-  const needsAmount = isGeneral || (item && Number(item.amount) <= 0)
+  // A pot always asks: the donor chooses their share of it.
+  const needsAmount = isGeneral || (item && (item.pooled || Number(item.amount) <= 0))
+  // Follow the live catalogue, so the modal's "left" figure drops while it is
+  // open if somebody else chips in first.
+  const livePot = item?.pooled ? (items.find((i) => i.id === item.id) || item) : null
+  const left = livePot ? potLeft(livePot) : Infinity
 
   const dayItems = useMemo(
     () => items.filter((i) => (day === 'general' ? i.day_index == null : i.day_index === day)),
@@ -86,7 +99,11 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
       day: isGeneral ? (day === 'general' ? null : day) : null,
     })
     setSending(false)
-    if (res === 'ok') setDone({ ...f, label: item ? item.title : 'General sponsorship' })
+    if (res === 'ok') setDone({ ...f, label: item ? item.title : 'General sponsorship', pot: !!livePot })
+    else if (res === 'over-pot' && Number.isFinite(left))
+      setErr(`Only ${money(left)} is left in this pot. Please lower the amount.`)
+    else if (res === 'item-taken' && livePot)
+      setErr('This pot has just been fully sponsored. Thank you for thinking of it.')
     else setErr(REASONS[res] || REASONS.error)
   }
 
@@ -137,6 +154,44 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
           <div key={cat} className="sp-cat">
             <h3 className="sp-cat-label">{cat}</h3>
             {list.map((it) => {
+              if (it.pooled) {
+                const target = Number(it.amount) > 0
+                const rest = potLeft(it)
+                const full = target && rest <= 0
+                return (
+                  <div key={it.id} className={'sp-row sp-pot' + (full ? ' is-taken' : '')}>
+                    <div className="sp-row-main">
+                      <div className="sp-row-name">{it.title}</div>
+                      {it.note && <div className="sp-row-note">{it.note}</div>}
+                    </div>
+                    <div className="sp-row-amt">
+                      {full ? money(it.amount) : target ? money(rest) : money(it.raised || 0)}
+                      <small>{full || !target ? 'pledged' : 'to go'}</small>
+                    </div>
+                    {target && (
+                      <div className="sp-pot-meter">
+                        {/* The bar is what is still needed, so it drains as people give. */}
+                        <div className="sp-pot-bar" role="progressbar" aria-label={`${it.title}: still needed`}
+                          aria-valuemin={0} aria-valuemax={Number(it.amount)} aria-valuenow={rest}>
+                          <i style={{ width: (rest / Number(it.amount)) * 100 + '%' }} />
+                        </div>
+                        <div className="sp-pot-meta">
+                          {Number(it.raised) > 0
+                            ? `${money(it.raised)} of ${money(it.amount)} pledged`
+                              + ` · ${it.backers} ${it.backers === 1 ? 'contributor' : 'contributors'}`
+                            : `Be the first to chip in toward ${money(it.amount)}`}
+                        </div>
+                      </div>
+                    )}
+                    <div className={'sp-pill ' + (full ? 'sp-pill-taken' : 'sp-pill-open')}>
+                      {full ? 'Fully sponsored · thank you' : 'Chip in any amount'}
+                    </div>
+                    {!full && (
+                      <button className="sp-row-btn" onClick={() => openFor(it)}>Chip in</button>
+                    )}
+                  </div>
+                )
+              }
               // 'pending' means somebody has asked for it and the committee has
               // not confirmed yet. It stops being offered either way, so two
               // donors cannot fill in the form for the same thing.
@@ -178,7 +233,7 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
           <div className="sp-overlay" onClick={close} />
           <div className="sp-modal" role="dialog" aria-modal="true" aria-label="Sponsorship form">
             <div className="sp-modal-top">
-              <h2>{done ? 'Thank you' : item ? 'Confirm your sponsorship' : 'Make a sponsorship'}</h2>
+              <h2>{done ? 'Thank you' : livePot ? 'Chip in' : item ? 'Confirm your sponsorship' : 'Make a sponsorship'}</h2>
               <button className="sp-x" onClick={close} aria-label="Close"><X size={18} /></button>
             </div>
 
@@ -186,7 +241,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
               <div className="sp-thanks">
                 <div className="sp-tick"><Check size={26} strokeWidth={3} /></div>
                 <p className="sp-thanks-lede">
-                  We have your request for <b>{done.label}</b>.
+                  {done.pot
+                    ? <>We have your <b>{money(done.amount)}</b> toward <b>{done.label}</b>.</>
+                    : <>We have your request for <b>{done.label}</b>.</>}
                 </p>
                 {interac && done.payMethod === 'Interac' ? (
                   <>
@@ -218,7 +275,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                 {item && (
                   <div className="sp-chosen">
                     <span>{item.title}</span>
-                    <b>{Number(item.amount) > 0 ? money(item.amount) : 'Any amount'}</b>
+                    <b>{livePot
+                      ? (Number.isFinite(left) ? `${money(left)} to go` : 'Any amount')
+                      : Number(item.amount) > 0 ? money(item.amount) : 'Any amount'}</b>
                   </div>
                 )}
 
@@ -241,10 +300,26 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                 </div>
 
                 {needsAmount && (
-                  <label className="sp-f"><span>Amount in CAD <i>*</i></span>
+                  <label className="sp-f"><span>{livePot ? 'Your share in CAD' : 'Amount in CAD'} <i>*</i></span>
                     <input required type="number" inputMode="decimal" min="1" step="1"
+                      max={Number.isFinite(left) ? left : undefined}
                       placeholder="101" value={f.amount}
                       onChange={(e) => setF({ ...f, amount: e.target.value })} /></label>
+                )}
+                {livePot && (
+                  <div className="sp-chips">
+                    {CHIP_INS.filter((n) => n < left).map((n) => (
+                      <button type="button" key={n} className="sp-chip"
+                        data-on={Number(f.amount) === n ? '1' : '0'}
+                        onClick={() => setF({ ...f, amount: String(n) })}>${n}</button>
+                    ))}
+                    {Number.isFinite(left) && left > 0 && (
+                      <button type="button" className="sp-chip"
+                        data-on={Number(f.amount) === left ? '1' : '0'}
+                        onClick={() => setF({ ...f, amount: String(left) })}>
+                        All ${left.toLocaleString('en-CA')}</button>
+                    )}
+                  </div>
                 )}
 
                 <fieldset className="sp-f sp-pay">
@@ -292,7 +367,8 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
                 {err && <p className="sp-err" role="alert">{err}</p>}
 
                 <button className="sp-submit" type="submit" disabled={sending}>
-                  {sending ? <><Loader2 size={15} className="sp-spin" /> Sending…</> : 'Submit sponsorship'}
+                  {sending ? <><Loader2 size={15} className="sp-spin" /> Sending…</>
+                    : livePot ? 'Submit my contribution' : 'Submit sponsorship'}
                 </button>
                 <p className="sp-fineprint">
                   No payment is taken on this page. The committee will contact you to arrange it.

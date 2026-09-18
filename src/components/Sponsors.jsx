@@ -23,7 +23,7 @@ export default function Sponsors({ cfg, items, requests, day,
   const [filter, setFilter] = useState('pending')
   const [busy, setBusy] = useState(null)
 
-  const blank = { day_index: day, category: SPONSOR_CATS[0], title: '', amount: '', note: '' }
+  const blank = { day_index: day, category: SPONSOR_CATS[0], title: '', amount: '', note: '', pooled: false }
   const [f, setF] = useState(blank)
 
   // The catalogue entry being edited, held as a draft so cancelling changes nothing.
@@ -48,6 +48,7 @@ export default function Sponsors({ cfg, items, requests, day,
       title: f.title.trim(),
       amount: Number(f.amount) || 0,
       note: f.note.trim() || null,
+      pooled: !!f.pooled,
       sort_order: Date.now() % 100000,
     })
     setF({ ...blank, day_index: f.day_index, category: f.category })
@@ -58,12 +59,12 @@ export default function Sponsors({ cfg, items, requests, day,
     setEd({ day_index: it.day_index == null ? 'general' : it.day_index,
             category: it.category || 'General', title: it.title || '',
             amount: Number(it.amount) > 0 ? String(it.amount) : '',
-            note: it.note || '' })
+            note: it.note || '', pooled: !!it.pooled })
   }
 
   /**
-   * Edits the description of an item, never its state. `status`, `sponsor_name`
-   * and `show_public` are not in the patch — those belong to the request queue,
+   * Edits the description of an item, never its state. `status`, `sponsor_name`,
+   * `show_public`, `raised` and `backers` are not in the patch — those belong to the request queue,
    * and rewriting them from here would strand a confirmed sponsorship.
    */
   const saveEdit = async (id) => {
@@ -74,6 +75,7 @@ export default function Sponsors({ cfg, items, requests, day,
       title: ed.title.trim(),
       amount: Number(ed.amount) || 0,
       note: ed.note.trim() || null,
+      pooled: !!ed.pooled,
     })
     setEditing(null)
   }
@@ -247,6 +249,11 @@ export default function Sponsors({ cfg, items, requests, day,
               <input placeholder="Feeds 60 guests" value={f.note}
                 onChange={(e) => setF({ ...f, note: e.target.value })} /></label>
           </div>
+          <label className="check">
+            <input type="checkbox" checked={f.pooled}
+              onChange={(e) => setF({ ...f, pooled: e.target.checked })} />
+            Pot: many donors chip in toward the amount
+          </label>
           <button className="btn btn-go" onClick={submitItem}>Add to the list</button>
         </div>
       )}
@@ -285,7 +292,15 @@ export default function Sponsors({ cfg, items, requests, day,
                     <input value={ed.note}
                       onChange={(e) => setEd({ ...ed, note: e.target.value })} /></label>
                 </div>
-                {it.status !== 'available' && (
+                {/* Switching an item between pot and single sponsor once someone has
+                    claimed or chipped in would strand their request, so it locks. */}
+                <label className="check">
+                  <input type="checkbox" checked={ed.pooled}
+                    disabled={it.status !== 'available' || Number(it.raised) > 0}
+                    onChange={(e) => setEd({ ...ed, pooled: e.target.checked })} />
+                  Pot: many donors chip in toward the amount
+                </label>
+                {!it.pooled && it.status !== 'available' && (
                   <div className="item-m" style={{ marginBottom: 8 }}>
                     Someone has already claimed this one. Editing the wording is fine —
                     to free it up, decline their request in the queue above.
@@ -305,6 +320,13 @@ export default function Sponsors({ cfg, items, requests, day,
                   {dayLabel(it.day_index)} · {it.category}
                   {it.note ? ` · ${it.note}` : ''}
                 </div>
+                {it.pooled && (
+                  <div className="item-m">
+                    {money(it.raised || 0)} pledged
+                    {Number(it.amount) > 0 && ` of ${money(it.amount)}`}
+                    {it.backers > 0 && ` · ${it.backers} ${it.backers === 1 ? 'contributor' : 'contributors'}`}
+                  </div>
+                )}
                 {it.sponsor_name && (
                   <div className="item-m">
                     Sponsored by {it.sponsor_name}
@@ -318,7 +340,11 @@ export default function Sponsors({ cfg, items, requests, day,
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <span className={'chip ' + (it.status === 'taken' ? 'chip-done' : 'chip-on')}>
-                {it.status === 'taken' ? 'Taken'
+                {it.pooled
+                  ? (Number(it.amount) > 0 && Number(it.raised) >= Number(it.amount) ? 'Pot full'
+                     : Number(it.amount) > 0 ? `Pot · ${money(Number(it.amount) - Number(it.raised || 0))} to go`
+                     : 'Pot · open')
+                  : it.status === 'taken' ? 'Taken'
                   : it.status === 'pending' ? 'Requested — not confirmed'
                   : 'Available'}
               </span>
