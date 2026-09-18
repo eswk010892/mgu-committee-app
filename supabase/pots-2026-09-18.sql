@@ -55,7 +55,9 @@ begin
    where id = p_item_id and pooled;
 end $fn$;
 
-revoke all on function public.refresh_pot(uuid) from public;
+-- Internal only. Supabase's default privileges grant anon and authenticated
+-- execute on every new function, so revoking from public alone is not enough.
+revoke all on function public.refresh_pot(uuid) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- SUBMIT: same signature as before, with a pot branch.
