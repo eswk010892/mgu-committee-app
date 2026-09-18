@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Check, X, Loader2, ArrowLeft } from 'lucide-react'
 
-import { currentDayIndex, dayDate, fmtDay, money } from '../lib/format.js'
+import { dayDate, fmtDay, money } from '../lib/format.js'
 import { PAY_METHODS } from '../lib/constants.js'
 import Crest from './Crest.jsx'
 
 const GENERAL = '__general__'
+
+/** The first tab: everything still unclaimed, across every day. */
+const OPEN = 'open'
 
 /** Suggested contributions to a pot. Only the ones that still fit are offered. */
 const CHIP_INS = [51, 101, 251, 501]
@@ -37,14 +40,10 @@ const REASONS = {
  */
 export default function SponsorPublic({ cfg, items, submit, onBack, embedded = false }) {
   const nDays = Math.max(1, Math.min(11, Number(cfg.days) || 1))
-  const [day, setDay] = useState(0)
-  // Open on the day the festival is actually on, and stop once the donor picks
-  // one — same rule as the public schedule. See `currentDayIndex`.
-  const picked = useRef(false)
-  const chooseDay = (i) => { picked.current = true; setDay(i) }
-  useEffect(() => {
-    if (!picked.current) setDay(currentDayIndex(cfg))
-  }, [cfg.start_date, cfg.days])
+  // Opens on everything still unclaimed, so a donor sees what the committee
+  // needs without paging through days. The day tabs are still there to browse.
+  const [day, setDay] = useState(OPEN)
+  const chooseDay = setDay
   const [open, setOpen] = useState(null)      // item object, or GENERAL, or null
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(null)      // the submitted form, once accepted
@@ -73,13 +72,28 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
   const livePot = item?.pooled ? (items.find((i) => i.id === item.id) || item) : null
   const left = livePot ? potLeft(livePot) : Infinity
 
-  const dayItems = useMemo(
-    () => items.filter((i) => (day === 'general' ? i.day_index == null : i.day_index === day)),
-    [items, day])
+  // Unclaimed: still offered, and for a pot, not yet full.
+  const unclaimed = useMemo(
+    () => items.filter((i) => i.status === 'available' && (!i.pooled || potLeft(i) > 0)),
+    [items])
+
+  const dayItems = useMemo(() => {
+    if (day === OPEN) {
+      // Last day first, counting down, then the any-day items. The sort is
+      // stable, so each day keeps the `bySponsorOrder` order items arrive in.
+      const rank = (i) => (i.day_index == null ? -1 : i.day_index)
+      return [...unclaimed].sort((a, b) => rank(b) - rank(a))
+    }
+    return items.filter((i) => (day === 'general' ? i.day_index == null : i.day_index === day))
+  }, [items, unclaimed, day])
 
   const byCategory = useMemo(() => {
     const g = {}
-    dayItems.forEach((i) => { (g[i.category || 'General'] ||= []).push(i) })
+    // The unclaimed list spans days, so it is grouped by day, not category.
+    const key = (i) => (day !== OPEN ? i.category || 'General'
+      : i.day_index == null ? 'Any day'
+      : `Day ${i.day_index + 1} · ${fmtDay(dayDate(cfg, i.day_index))}`)
+    dayItems.forEach((i) => { (g[key(i)] ||= []).push(i) })
     // No sort here: groups keep the order of their first item, and items arrive
     // sorted by `bySponsorOrder`, so a group with anything still open comes first.
     return Object.entries(g)
@@ -96,7 +110,7 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
       name: f.name, org: f.org, email: f.email, phone: f.phone,
       amount: needsAmount ? f.amount : null,
       payMethod: f.payMethod, showName: f.showName, message: f.message,
-      day: isGeneral ? (day === 'general' ? null : day) : null,
+      day: isGeneral ? (day === 'general' || day === OPEN ? null : day) : null,
     })
     setSending(false)
     if (res === 'ok') setDone({ ...f, label: item ? item.title : 'General sponsorship', pot: !!livePot })
@@ -131,6 +145,9 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
       </section>
 
       <nav className="sp-tabs" aria-label="Festival day">
+        <button className="sp-tab" data-on={day === OPEN ? '1' : '0'} onClick={() => chooseDay(OPEN)}>
+          Available<span>{unclaimed.length} open</span>
+        </button>
         {Array.from({ length: nDays }, (_, i) => (
           <button key={i} className="sp-tab" data-on={day === i ? '1' : '0'} onClick={() => chooseDay(i)}>
             Day {i + 1}<span>{fmtDay(dayDate(cfg, i)).replace(/^\w+,\s*/, '')}</span>
@@ -145,10 +162,20 @@ export default function SponsorPublic({ cfg, items, submit, onBack, embedded = f
         {byCategory.length === 0 ? (
           <div className="sp-empty">
             <Crest size={54} />
-            <h3>Nothing listed here yet</h3>
-            <p>The committee is still adding sponsorship options for this day.
-              You can still give any amount toward the festival.</p>
-            <button className="sp-cta sp-cta-sm" onClick={() => openFor(GENERAL)}>Sponsor this day</button>
+            {day === OPEN ? (
+              <>
+                <h3>Everything has been sponsored</h3>
+                <p>Thank you, Montreal. You can still give any amount toward the festival.</p>
+              </>
+            ) : (
+              <>
+                <h3>Nothing listed here yet</h3>
+                <p>The committee is still adding sponsorship options for this day.
+                  You can still give any amount toward the festival.</p>
+              </>
+            )}
+            <button className="sp-cta sp-cta-sm" onClick={() => openFor(GENERAL)}>
+              {day === OPEN ? 'Make a sponsorship' : 'Sponsor this day'}</button>
           </div>
         ) : byCategory.map(([cat, list]) => (
           <div key={cat} className="sp-cat">
